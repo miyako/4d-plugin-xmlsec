@@ -44,4 +44,8 @@ $status:=xmlsec verify ($params;$keyBLOB;$certBLOB)
 
 **Note**: there seems to be a bug in `xmlSecDSigCtxVerify`. the `status` is not correctly returned in `xmlSecDSigCtx.status`. the plugin is using a workaround.
 
+---
 
+# TODO
+
+[ETSI example](https://www.etsi.org/deliver/etsi_en/319100_319199/31913201/01.01.00_30/en_31913201v010100v.pdf)
