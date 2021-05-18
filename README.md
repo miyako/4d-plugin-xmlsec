@@ -48,4 +48,4 @@ $status:=xmlsec verify ($params;$keyBLOB;$certBLOB)
 
 # TODO
 
-[ETSI example](https://www.etsi.org/deliver/etsi_en/319100_319199/31913201/01.01.00_30/en_31913201v010100v.pdf)
+[ETSI](https://www.etsi.org/deliver/etsi_en/319100_319199/31913201/01.01.00_30/en_31913201v010100v.pdf)
