@@ -30,4 +30,4 @@ End if
 
 #### options for **sign**
 
-* name: set `<dsig:KeyName>` (optional)  
+* `name`: `<dsig:KeyName>` (optional)  
