@@ -23,3 +23,7 @@ End if
 #### options for **sign**
 
 * `name`: `<dsig:KeyName>` (optional)  
+* `ignoreManifests`: `--ignore-manifests`
+* `storeReferences`: `--store-references`
+* `storeSignatures`: `--store-signatures`
+* `enableVisa3DHack`: `--enable-visa3d-hack`
