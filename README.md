@@ -25,3 +25,18 @@ $status:=xmlsec sign ($params;$keyBLOB)
 * `storeReferences`: `--store-references`
 * `storeSignatures`: `--store-signatures`
 * `enableVisa3DHack`: `--enable-visa3d-hack`
+
+### Verify
+
+```4d
+$xml:=Folder(fk resources folder).folder("sign3").file("sign3-res.xml")
+$rsapub:=Folder(fk resources folder).file("rsapub.pem")
+$cacert:=Folder(fk resources folder).file("cacert.pem")
+
+$params:=New object
+$params.xml:=$xml.getText("utf-8";Document with LF)
+$keyBLOB:=$rsapub.getContent()
+$certBLOB:=$cacert.getContent()
+
+$status:=xmlsec verify ($params;$keyBLOB;$certBLOB)
+```
