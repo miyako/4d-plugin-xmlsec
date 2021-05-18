@@ -1,5 +1,5 @@
 # 4d-plugin-xmlsec
-XML signature based on xmlsec1
+XML signature based on [xmlsec](https://www.aleksey.com/xmlsec/)
 
 #### Sign
 
