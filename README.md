@@ -22,6 +22,9 @@ End if
 
 #### options for **sign**
 
+* `tmpl`: XML source text or platform path  
+* `key`: format of private key; one of \[binary,pem(default),der,pkcs8pem,pkcs8der,pkcs12,pemcert,dercert\]  
+* `password`: password of private key (optional)  
 * `name`: `<dsig:KeyName>` (optional)  
 * `ignoreManifests`: `--ignore-manifests`
 * `storeReferences`: `--store-references`
