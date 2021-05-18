@@ -41,3 +41,7 @@ $certBLOB:=$cacert.getContent()
 
 $status:=xmlsec verify ($params;$keyBLOB;$certBLOB)
 ```
+
+**Note**: there seems to be a bug in `xmlSecDSigCtxVerify`. the `status` is not correctly returned in `xmlSecDSigCtx.status`. the plugin is using a workaround.
+
+
