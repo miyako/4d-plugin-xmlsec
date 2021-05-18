@@ -21,6 +21,7 @@ $status:=xmlsec sign ($params;$keyBLOB)
 * `key`: format of private key; one of \[binary,pem(default),der,pkcs8pem,pkcs8der,pkcs12,pemcert,dercert\]  
 * `password`: password to open private key (optional)  
 * `name`: `<dsig:KeyName>` (optional)  
+* `tmpl`: add template to XML ``--sign-tmpl``
 * `ignoreManifests`: `--ignore-manifests`
 * `storeReferences`: `--store-references`
 * `storeSignatures`: `--store-signatures`
