@@ -1,7 +1,7 @@
 # 4d-plugin-xmlsec
 XML signature based on [xmlsec](https://www.aleksey.com/xmlsec/)
 
-#### Sign
+### Sign
 
 ```4d
 $tmpl:=Folder(fk resources folder).folder("sign1").file("sign1-tmpl.xml")
@@ -28,3 +28,6 @@ If ($status.success)
 End if 
 ```
 
+#### options for **sign**
+
+* name: set `<dsig:KeyName>` (optional)  
