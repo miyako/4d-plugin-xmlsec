@@ -8,9 +8,7 @@ $tmpl:=Folder(fk resources folder).folder("sign1").file("sign1-tmpl.xml")
 $rsakey:=Folder(fk resources folder).file("rsakey.pem")
 
 $params:=New object
-$params.tmpl:=$tmpl.getText()
-$params.name:=$rsakey.name+$rsakey.extension  //<KeyName>...</KeyName>
-
+$params.xml:=$tmpl.getText()
 $keyBLOB:=$rsakey.getContent()
 
 $status:=xmlsec sign ($params;$keyBLOB)
