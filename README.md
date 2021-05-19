@@ -24,15 +24,11 @@ $status:=xmlsec sign ($params;$keyBLOB)
 
 #### options for **sign**
 
-* `xml`: XML template text or platform path  
+* `xml`: XML text or platform path  
 * `key`: format of private key; one of \[binary,pem(default),der,pkcs8pem,pkcs8der,pkcs12,pemcert,dercert\]  
 * `password`: password to open private key (optional)  
 * `name`: `<dsig:KeyName>` (optional)  
 * `tmpl`: add template to XML ``--sign-tmpl``
-* `ignoreManifests`: `--ignore-manifests`
-* `storeReferences`: `--store-references`
-* `storeSignatures`: `--store-signatures`
-* `enableVisa3DHack`: `--enable-visa3d-hack`
 
 ### Verify
 
@@ -49,7 +45,20 @@ $certBLOB:=$cacert.getContent()
 $status:=xmlsec verify ($params;$keyBLOB;$certBLOB)
 ```
 
+#### options for **verify**
+
+* `xml`: XML text or platform path  
+* `key`: format of private key; one of \[binary,pem(default),der,pkcs8pem,pkcs8der,pkcs12,pemcert,dercert\]  
+* `password`: password to open private key (optional)  
+
 **Note**: there seems to be a bug in `xmlSecDSigCtxVerify`. the `status` is not correctly returned in `xmlSecDSigCtx.status`. the plugin is using a workaround.
+
+#### other options
+
+* `ignoreManifests`: `--ignore-manifests`
+* `storeReferences`: `--store-references`
+* `storeSignatures`: `--store-signatures`
+* `enableVisa3DHack`: `--enable-visa3d-hack`
 
 ---
 
