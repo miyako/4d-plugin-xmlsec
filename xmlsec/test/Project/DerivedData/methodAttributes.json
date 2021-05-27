@@ -39,6 +39,15 @@
 				"preemptive": "capable"
 			}
 		},
+		"generate_lowercase_uuid": {
+			"timeStamp": "2021-05-27T08:01:06.296Z",
+			"attributes": {
+				"invisible": true
+			}
+		},
+		"another_test": {
+			"timeStamp": "2021-05-27T06:56:14.565Z"
+		},
 		"generate_project_xcode": {
 			"timeStamp": "2019-07-02T13:57:13.000Z",
 			"attributes": {
@@ -46,14 +55,14 @@
 				"preemptive": "capable"
 			}
 		},
-		"TEST": {
-			"timeStamp": "2021-05-18T23:13:15.375Z",
+		"XAdES": {
+			"timeStamp": "2021-05-27T07:30:50.623Z",
 			"attributes": {
 				"invisible": true
 			}
 		},
 		"sign1": {
-			"timeStamp": "2021-05-18T23:11:47.963Z",
+			"timeStamp": "2021-05-27T08:01:07.817Z",
 			"attributes": {
 				"invisible": true
 			}
@@ -65,7 +74,7 @@
 			}
 		},
 		"sign2": {
-			"timeStamp": "2021-05-18T23:11:46.392Z",
+			"timeStamp": "2021-05-27T12:18:09.710Z",
 			"attributes": {
 				"invisible": true
 			}
@@ -80,6 +89,9 @@
 				"preemptive": "capable"
 			}
 		},
+		"xmldsig_sign_3": {
+			"timeStamp": "2021-05-27T14:31:05.627Z"
+		},
 		"generate_project_plugin_stub": {
 			"timeStamp": "2019-07-23T08:36:58.000Z",
 			"attributes": {
@@ -87,11 +99,23 @@
 				"preemptive": "capable"
 			}
 		},
+		"xmldsig_sign_2": {
+			"timeStamp": "2021-05-27T13:34:06.040Z"
+		},
 		"generate_project_source": {
 			"timeStamp": "2019-07-02T14:36:13.000Z",
 			"attributes": {
 				"invisible": true,
 				"preemptive": "capable"
+			}
+		},
+		"xmldsig_sign_1": {
+			"timeStamp": "2021-05-27T13:34:26.448Z"
+		},
+		"(TEST)": {
+			"timeStamp": "2021-05-18T23:13:15.375Z",
+			"attributes": {
+				"invisible": true
 			}
 		}
 	}

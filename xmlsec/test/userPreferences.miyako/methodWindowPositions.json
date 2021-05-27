@@ -156,10 +156,10 @@
 		"height": 757
 	},
 	"Sources/Methods/sign1.4dm": {
-		"left": 509,
-		"top": 287,
-		"width": 877,
-		"height": 495
+		"left": 480,
+		"top": 136,
+		"width": 1124,
+		"height": 904
 	},
 	"Sources/Methods/verify1.4dm": {
 		"left": 466,
@@ -168,22 +168,16 @@
 		"height": 469
 	},
 	"Sources/Methods/sign2.4dm": {
-		"left": 509,
-		"top": 287,
-		"width": 877,
-		"height": 495
+		"left": 480,
+		"top": 136,
+		"width": 1124,
+		"height": 904
 	},
 	"Sources/Methods/sign3.4dm": {
-		"left": 509,
-		"top": 287,
-		"width": 877,
-		"height": 495
-	},
-	"Sources/Methods/TEST.4dm": {
-		"left": 466,
-		"top": 411,
-		"width": 877,
-		"height": 443
+		"left": 480,
+		"top": 136,
+		"width": 1124,
+		"height": 904
 	},
 	"Trash/Methods/(verify0).4dm": {
 		"left": 179,
@@ -214,5 +208,47 @@
 		"top": 411,
 		"width": 877,
 		"height": 443
+	},
+	"Sources/Methods/another_test.4dm": {
+		"left": 796,
+		"top": 136,
+		"width": 1124,
+		"height": 904
+	},
+	"Sources/Methods/XAdES.4dm": {
+		"left": 76,
+		"top": 172,
+		"width": 1124,
+		"height": 930
+	},
+	"Sources/Methods/generate_lowercase_uuid.4dm": {
+		"left": 480,
+		"top": 136,
+		"width": 1124,
+		"height": 904
+	},
+	"Trash/Methods/(TEST).4dm": {
+		"left": 466,
+		"top": 437,
+		"width": 877,
+		"height": 417
+	},
+	"Sources/Methods/xmldsig_sign_2.4dm": {
+		"left": 480,
+		"top": 136,
+		"width": 1124,
+		"height": 904
+	},
+	"Sources/Methods/xmldsig_sign_1.4dm": {
+		"left": 480,
+		"top": 136,
+		"width": 1124,
+		"height": 904
+	},
+	"Sources/Methods/xmldsig_sign_3.4dm": {
+		"left": 522,
+		"top": 161,
+		"width": 1124,
+		"height": 878
 	}
 }

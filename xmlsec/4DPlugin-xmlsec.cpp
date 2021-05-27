@@ -96,7 +96,7 @@ static xmlSecKeyPtr loadKey(PA_ObjectRef options, C_BLOB& Param2, xmlSecKeyDataF
     
     CUTF8String textValue;
     if(ob_get_s(options, L"password", &textValue)) {
-        password = (const xmlChar *)textValue.c_str();
+        password = BAD_CAST textValue.c_str();
     }
     
     return xmlSecCryptoAppKeyLoadMemory((const xmlSecByte *)Param2.getBytesPtr(),
@@ -106,21 +106,13 @@ static xmlSecKeyPtr loadKey(PA_ObjectRef options, C_BLOB& Param2, xmlSecKeyDataF
                                         NULL, NULL);
 }
 
-static int loadCert(xmlSecKeyPtr key, C_BLOB& Param3, xmlSecKeyDataFormat fmt) {
-        
-    return xmlSecOpenSSLAppKeyCertLoadMemory(key,
-                                             (const xmlSecByte *)Param3.getBytesPtr(),
-                                             (xmlSecSize)Param3.getBytesLength(),
-                                             fmt);
-}
-
 static xmlDocPtr parseXml(PA_ObjectRef options, const wchar_t *key) {
     
     xmlDocPtr p = NULL;
     
     CUTF8String xml;
     if(ob_get_s(options, key, &xml)) {
-        p = xmlParseDoc((const xmlChar *)xml.c_str());
+        p = xmlParseDoc(BAD_CAST xml.c_str());
     }
     
     if(p == NULL) {
@@ -249,41 +241,6 @@ static xmlNodePtr findNode(PA_ObjectRef options, xmlDocPtr doc) {
     return getSignatureNode(doc);
 }
 
-static xmlSecKeyDataFormat getFmt(PA_ObjectRef options, const wchar_t *key) {
-    
-    xmlSecKeyDataFormat fmt = xmlSecKeyDataFormatPem;
-    
-    CUTF8String textValue;
-    if(ob_get_s(options, L"key", &textValue)) {
-        if(textValue == (const uint8_t *)"binary") {
-            fmt = xmlSecKeyDataFormatBinary;
-        }else
-        if(textValue == (const uint8_t *)"pem") {
-            fmt = xmlSecKeyDataFormatPem;
-        }else
-        if(textValue == (const uint8_t *)"der") {
-            fmt = xmlSecKeyDataFormatDer;
-        }else
-        if(textValue == (const uint8_t *)"pkcs8pem") {
-            fmt = xmlSecKeyDataFormatPkcs8Pem;
-        }else
-        if(textValue == (const uint8_t *)"pkcs8der") {
-            fmt = xmlSecKeyDataFormatPkcs8Der;
-        }else
-        if(textValue == (const uint8_t *)"pkcs12") {
-            fmt = xmlSecKeyDataFormatPkcs12;
-        }else
-        if(textValue == (const uint8_t *)"pemcert") {
-            fmt = xmlSecKeyDataFormatCertPem;
-        }else
-        if(textValue == (const uint8_t *)"dercert") {
-            fmt = xmlSecKeyDataFormatCertDer;
-        }
-    }
-    
-    return fmt;
-}
-
 static void verify_result(PA_ObjectRef status, xmlSecDSigCtxPtr pDsigCtx) {
     
     ob_set_b(status, L"success", true);
@@ -308,7 +265,7 @@ static void sign_result(PA_ObjectRef status, xmlDocPtr doc) {
     xmlDocDumpFormatMemoryEnc(doc, &xml, &len, "UTF-8", 1);
     if(xml) {
         if(len) {
-            CUTF8String result = CUTF8String((const uint8_t *)xml, (size_t)len);
+            CUTF8String result = CUTF8String(BAD_CAST xml, (size_t)len);
             ob_set_s(status, L"xml", (const char *)result.c_str());
             ob_set_b(status, L"success", true);
         }else{
@@ -318,237 +275,1239 @@ static void sign_result(PA_ObjectRef status, xmlDocPtr doc) {
     }
 }
 
-static void doIt(PA_PluginParameters params, xmlsec_command_t command, int cb(xmlSecDSigCtxPtr dsigCtx, xmlNodePtr node)) {
+static xmlSecKeyDataFormat getFmt(PA_ObjectRef options, const wchar_t *key) {
     
+    xmlSecKeyDataFormat fmt = xmlSecKeyDataFormatPem;
+    
+    if(options) {
+        
+        CUTF8String textValue;
+        
+        if(ob_get_s(options, key, &textValue)) {
+            if(textValue == BAD_CAST "binary") {
+                fmt = xmlSecKeyDataFormatBinary;
+            }else
+            if(textValue == BAD_CAST "pem") {
+                fmt = xmlSecKeyDataFormatPem;
+            }else
+            if(textValue == BAD_CAST "der") {
+                fmt = xmlSecKeyDataFormatDer;
+            }else
+            if(textValue == BAD_CAST "pkcs8pem") {
+                fmt = xmlSecKeyDataFormatPkcs8Pem;
+            }else
+            if(textValue == BAD_CAST "pkcs8der") {
+                fmt = xmlSecKeyDataFormatPkcs8Der;
+            }else
+            if(textValue == BAD_CAST "pkcs12") {
+                fmt = xmlSecKeyDataFormatPkcs12;
+            }else
+            if(textValue == BAD_CAST "pemcert") {
+                fmt = xmlSecKeyDataFormatCertPem;
+            }else
+            if(textValue == BAD_CAST "dercert") {
+                fmt = xmlSecKeyDataFormatCertDer;
+            }
+        }
+    }
+    
+    return fmt;
+}
+
+#pragma mark <dsig:Reference>
+
+static xmlSecTransformId getDigestMethod(PA_ObjectRef xmldsig, const wchar_t *key) {
+    
+    CUTF8String textValue;
+
+    if(xmldsig) {
+        
+        if(ob_get_s(xmldsig, key, &textValue)) {
+
+            xmlString transformId = BAD_CAST textValue.c_str();
+
+            if(transformId == BAD_CAST "sha224") {
+                return xmlSecTransformSha224Id;
+            }
+            
+            if(transformId == BAD_CAST "sha256") {
+                return xmlSecTransformSha256Id;
+            }
+            
+            if(transformId == BAD_CAST "sha384") {
+                return xmlSecTransformSha384Id;
+            }
+            
+            if(transformId == BAD_CAST "sha512") {
+                return xmlSecTransformSha512Id;
+            }
+            
+        }
+
+    }
+    
+    return xmlSecTransformSha1Id;
+}
+
+static xmlNodePtr createRefNode(PA_ObjectRef options,
+                                xmlNodePtr signNode,
+                                xmlSecTransformId digestMethod) {
+    
+    xmlNodePtr refNode = NULL;
+    
+    if(signNode) {
+        
+        xmlString reference_id;
+        xmlString reference_type;
+        
+        if(options) {
+            
+            CUTF8String textValue;
+            
+            PA_ObjectRef xmldsig = ob_get_o(options, L"xmldsig");
+            
+            if(xmldsig) {
+                
+                PA_ObjectRef ref = ob_get_o(xmldsig, L"ref");
+                
+                if(ref) {
+                    
+                    if(ob_get_s(ref, L"id", &textValue)) {
+                        reference_id = BAD_CAST textValue.c_str();
+                    }
+                                        
+                    if(ob_get_s(ref, L"type", &textValue)) {
+                        reference_type = BAD_CAST textValue.c_str();
+                    }
+                }
+                
+                refNode = xmlSecTmplSignatureAddReference(signNode,
+                                                          digestMethod,
+                                                          reference_id.length() ? reference_id.c_str() : NULL,
+                                                          BAD_CAST "",
+                                                          reference_type.length() ? reference_type.c_str() : NULL);
+                
+            }
+        }
+    }
+    
+    return refNode;
+}
+
+#pragma mark <dsig:Signature>
+
+static xmlSecTransformId getSignMethodId(PA_ObjectRef xmldsig, const wchar_t *key) {
+   
+    CUTF8String textValue;
+    
+    if(xmldsig) {
+        
+        if(ob_get_s(xmldsig, key, &textValue)) {
+            
+            xmlString transformId = BAD_CAST textValue.c_str();
+
+            if(transformId == BAD_CAST "rsa-sha1") {
+                return xmlSecTransformRsaSha1Id;
+            }
+            
+            if(transformId == BAD_CAST "rsa-sha224") {
+                return xmlSecTransformRsaSha224Id;
+            }
+            
+            if(transformId == BAD_CAST "rsa-sha256") {
+                return xmlSecTransformRsaSha256Id;
+            }
+            
+            if(transformId == BAD_CAST "rsa-sha384") {
+                return xmlSecTransformRsaSha384Id;
+            }
+            
+            if(transformId == BAD_CAST "rsa-sha512") {
+                return xmlSecTransformRsaSha512Id;
+            }
+            
+            if(transformId == BAD_CAST "hmac-sha1") {
+                return xmlSecTransformHmacSha1Id;
+            }
+            
+            if(transformId == BAD_CAST "hmac-sha224") {
+                return xmlSecTransformHmacSha224Id;
+            }
+
+            if(transformId == BAD_CAST "hmac-sha256") {
+                return xmlSecTransformHmacSha256Id;
+            }
+
+            if(transformId == BAD_CAST "hmac-sha384") {
+                return xmlSecTransformHmacSha384Id;
+            }
+            
+            if(transformId == BAD_CAST "hmac-sha512") {
+                return xmlSecTransformHmacSha512Id;
+            }
+            
+            if(transformId == BAD_CAST "dsa-sha1") {
+                return xmlSecTransformDsaSha1Id;
+            }
+            
+            if(transformId == BAD_CAST "dsa-sha256") {
+                return xmlSecTransformDsaSha256Id;
+            }
+
+            if(transformId == BAD_CAST "ecdsa-sha1") {
+                return xmlSecTransformEcdsaSha1Id;
+            }
+            
+            if(transformId == BAD_CAST "ecdsa-sha224") {
+                return xmlSecTransformEcdsaSha224Id;
+            }
+
+            if(transformId == BAD_CAST "ecdsa-sha256") {
+                return xmlSecTransformEcdsaSha256Id;
+            }
+            
+            if(transformId == BAD_CAST "ecdsa-sha384") {
+                return xmlSecTransformEcdsaSha384Id;
+            }
+            
+            if(transformId == BAD_CAST "ecdsa-sha512") {
+                return xmlSecTransformEcdsaSha512Id;
+            }
+ 
+        }
+        
+    }
+
+    return xmlSecTransformRsaSha1Id;
+}
+
+static xmlSecTransformId getTransformId(PA_ObjectRef xmldsig, const wchar_t *key) {
+                
+    CUTF8String textValue;
+    
+    if(xmldsig) {
+        
+        if(ob_get_s(xmldsig, key, &textValue)) {
+            
+            xmlString transformId = BAD_CAST textValue.c_str();
+            
+            if(transformId == BAD_CAST "1.0") {
+                return xmlSecTransformInclC14NId;
+            }
+            
+            if(transformId == BAD_CAST "1.0.c") {
+                return xmlSecTransformInclC14NWithCommentsId;
+            }
+            
+            if(transformId == BAD_CAST "1.1") {
+                return xmlSecTransformInclC14N11Id;
+            }
+            
+            if(transformId == BAD_CAST "1.1.c") {
+                return xmlSecTransformInclC14N11WithCommentsId;
+            }
+            
+            if(transformId == BAD_CAST "1.0.e") {
+                return xmlSecTransformExclC14NId;
+            }
+            
+            if(transformId == BAD_CAST "1.0.e.c") {
+                return xmlSecTransformExclC14NWithCommentsId;
+            }
+            
+        }
+        
+    }
+
+    return xmlSecTransformExclC14NId;
+}
+
+static xmlNodePtr createSignNode(PA_ObjectRef options, xmlDocPtr doc) {
+    
+    xmlNodePtr signNode = NULL;
+    
+    if(doc) {
+
+        xmlString xmldsig_id;
+        xmlString xmldsig_ns = BAD_CAST "ds";
+        xmlSecTransformId c14n = xmlSecTransformExclC14NId;
+        xmlSecTransformId sign = xmlSecTransformRsaSha1Id;
+        
+        if(options) {
+            
+            CUTF8String textValue;
+            
+            PA_ObjectRef xmldsig = ob_get_o(options, L"xmldsig");
+            
+            if(xmldsig) {
+                
+                if(ob_get_s(xmldsig, L"ns", &textValue)) {
+                    xmldsig_ns = BAD_CAST textValue.c_str();
+                }
+
+                if(ob_get_s(xmldsig, L"id", &textValue)) {
+                    xmldsig_id = BAD_CAST textValue.c_str();
+                }
+                
+                c14n = getTransformId(xmldsig, L"c14n");
+                sign = getSignMethodId(xmldsig, L"sign");
+            }
+
+        }
+        
+        if(xmldsig_ns.length()) {
+            signNode = xmlSecTmplSignatureCreateNsPref(doc,
+                                                       c14n,
+                                                       sign,
+                                                       xmldsig_id.length() ? xmldsig_id.c_str() : NULL,
+                                                       xmldsig_ns.c_str());
+        }else{
+            signNode = xmlSecTmplSignatureCreate(doc,
+                                                 c14n,
+                                                 sign,
+                                                 xmldsig_id.length() ? xmldsig_id.c_str() : NULL);
+        }
+        
+        if(signNode) {
+            xmlAddChild(xmlDocGetRootElement(doc), signNode);
+        }
+    }
+
+    return signNode;
+}
+
+#pragma mark <dsig:KeyInfo>
+
+static xmlNodePtr loadCerts(PA_ObjectRef options,
+                            xmlNodePtr signNode,
+                            xmlSecKeyPtr key,
+                            xmlSecKeyDataFormat fmt, PA_Variable Param3) {
+    
+    xmlNodePtr keyInfoNode = NULL;
+    
+    xmlString keyinfo_id;
+    
+    if(options) {
+        
+        PA_ObjectRef xmldsig = ob_get_o(options, L"xmldsig");
+        
+        if(xmldsig) {
+         
+            CUTF8String textValue;
+
+            PA_ObjectRef keyInfo = ob_get_o(xmldsig, L"keyInfo");
+            if(keyInfo) {
+                
+                if(ob_get_s(keyInfo, L"id", &textValue)) {
+                    keyinfo_id = BAD_CAST textValue.c_str();
+                }
+            }
+        }
+    }
+ 
+    BOOL success = false;
+
+    if(PA_GetVariableKind(Param3) == eVK_ArrayBlob) {
+
+        for(PA_ulong32 i = 0; i <= PA_GetArrayNbElements(Param3); ++i) {
+            
+            PA_Blob blob = PA_GetBlobInArray(Param3, i);
+            
+            PA_Handle h = blob.fHandle;
+            
+            if(h) {
+                
+                void *p = (void *)PA_LockHandle(h);
+                PA_long32 size = PA_GetHandleSize(h);
+                
+                if(0 == xmlSecOpenSSLAppKeyCertLoadMemory(key,
+                                                          (const xmlSecByte *)p,
+                                                          (xmlSecSize)size,
+                                                          fmt)) {
+                    
+                    if(!success) {
+                        keyInfoNode = xmlSecTmplSignatureEnsureKeyInfo(signNode, keyinfo_id.c_str());//crash on null Id
+                        success = true;
+                    }
+
+                    xmlNodePtr x509DataNode = xmlSecTmplKeyInfoAddX509Data(keyInfoNode);
+                    
+                    xmlNodePtr issuerSerialNode = xmlSecTmplX509DataAddIssuerSerial(x509DataNode);
+                    xmlNodePtr certificateNode = xmlSecTmplX509DataAddCertificate(x509DataNode);
+                    xmlNodePtr skiNode = xmlSecTmplX509DataAddSKI(x509DataNode);
+                    xmlNodePtr crlNode = xmlSecTmplX509DataAddCRL(x509DataNode);
+                    xmlNodePtr subjectName = xmlSecTmplX509DataAddSubjectName(x509DataNode);
+                    
+                    /*
+                     
+                     not implemented:
+                     
+                     xmlSecTmplKeyInfoAddEncryptedKey
+                     xmlSecTmplRetrievalMethodAddTransform
+                     
+                     
+                     */
+                }
+                
+                PA_UnlockHandle(h);
+            }
+            
+        }
+    }
+ 
+    return keyInfoNode;
+}
+
+static xmlNodePtr xadesCreateObjectNode(xmlNodePtr signNode) {
+    
+    xmlNodePtr objectNode = NULL;
+    
+    objectNode = xmlSecTmplSignatureAddObject(signNode, NULL, NULL, NULL);
+    
+    return objectNode;
+    
+}
+
+static xmlNodePtr xadesCreateQualifyingPropertiesNode(PA_ObjectRef options,
+                                                      xmlDocPtr doc,
+                                                      xmlNodePtr signNode,
+                                                      xmlString& xmldsig_ns,
+                                                      xmlString& xades_ns) {
+    
+    xmlNodePtr qualifyingPropertiesNode = NULL;
+    
+    qualifyingPropertiesNode = xmlNewNode(NULL, BAD_CAST "QualifyingProperties");
+    
+    if(qualifyingPropertiesNode) {
+        
+        CUTF8String textValue;
+        
+        PA_ObjectRef xades = ob_get_o(options, L"xades");
+        
+        if(xades) {
+            if(ob_get_s(xades, L"qualifyingProperties_id", &textValue)) {
+                xmlString qualifyingProperties_id = BAD_CAST textValue.c_str();
+                if(qualifyingProperties_id.length()) {
+                    xmlSetProp(qualifyingPropertiesNode, BAD_CAST "Id", qualifyingProperties_id.c_str());
+                }
+            }
+        }
+        
+        PA_ObjectRef xmldsig = ob_get_o(options, L"xmldsig");
+        
+        if(xmldsig) {
+            if(ob_get_s(xmldsig, L"id", &textValue)) {
+                if(textValue.length()) {
+                    xmlString qualifyingProperties_target = BAD_CAST "#";
+                    qualifyingProperties_target += BAD_CAST textValue.c_str();
+                    if(qualifyingProperties_target.length()) {
+                        xmlSetProp(qualifyingPropertiesNode, BAD_CAST "Target", qualifyingProperties_target.c_str());
+                    }
+                }
+            }
+        }
+        xmlNodePtr objectNode = xadesCreateObjectNode(signNode);
+        xmlAddChild(objectNode, qualifyingPropertiesNode);
+    }
+    
+    return qualifyingPropertiesNode;
+}
+
+static void getHash(C_BLOB& data, xmlString& value, xmlSecTransformId digestMethod) {
+    
+    std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> ctx(EVP_MD_CTX_new(), EVP_MD_CTX_free);
+    
+    const EVP_MD *(*md)();
+    
+    if(digestMethod->name == xmlSecTransformSha1Id->name) {
+        md = EVP_sha1;
+    }
+    
+    if(digestMethod->name == xmlSecTransformSha224Id->name) {
+        md = EVP_sha224;
+    }
+    
+    if(digestMethod->name == xmlSecTransformSha256Id->name) {
+        md = EVP_sha256;
+    }
+    
+    if(digestMethod->name == xmlSecTransformSha384Id->name) {
+        md = EVP_sha384;
+    }
+    
+    if(digestMethod->name == xmlSecTransformSha512Id->name) {
+        md = EVP_sha512;
+    }
+    
+    if(EVP_DigestInit(ctx.get(), md()) != 0)
+    {
+        if(EVP_DigestUpdate(ctx.get(), data.getBytesPtr(), data.getBytesLength()) != 0)
+        {
+            unsigned int len = 0;
+            std::string hash;
+            hash.resize(EVP_MD_CTX_size(ctx.get()));
+            if(EVP_DigestFinal(ctx.get(), (unsigned char*)hash.data(), &len) != 0)
+            {
+                hash.resize(len);
+
+                value = BAD_CAST base64_encode_uri((const unsigned char *)hash.c_str(), hash.length()).c_str();
+            }
+        }
+    }
+}
+
+static void getHash(xmlString& value, xmlSecTransformId digestMethod) {
+    
+    std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> ctx(EVP_MD_CTX_new(), EVP_MD_CTX_free);
+    
+    const EVP_MD *(*md)();
+    
+    if(digestMethod->name == xmlSecTransformSha1Id->name) {
+        md = EVP_sha1;
+    }
+    
+    if(digestMethod->name == xmlSecTransformSha224Id->name) {
+        md = EVP_sha224;
+    }
+    
+    if(digestMethod->name == xmlSecTransformSha256Id->name) {
+        md = EVP_sha256;
+    }
+    
+    if(digestMethod->name == xmlSecTransformSha384Id->name) {
+        md = EVP_sha384;
+    }
+    
+    if(digestMethod->name == xmlSecTransformSha512Id->name) {
+        md = EVP_sha512;
+    }
+    
+    if(EVP_DigestInit(ctx.get(), md()) != 0)
+    {
+        if(EVP_DigestUpdate(ctx.get(), value.c_str(), value.length()) != 0)
+        {
+            unsigned int len = 0;
+            std::string hash;
+            hash.resize(EVP_MD_CTX_size(ctx.get()));
+            if(EVP_DigestFinal(ctx.get(), (unsigned char*)hash.data(), &len) != 0)
+            {
+                hash.resize(len);
+
+                value = BAD_CAST base64_encode_uri((const unsigned char *)hash.c_str(), hash.length()).c_str();
+            }
+        }
+    }
+}
+
+typedef struct {
+    
+    xmlDocPtr doc;
+    xmlNodePtr anchor;
+    xmlNodeSetPtr nodeset;
+    int length;
+    
+} c14nctx_t;
+
+#pragma mark c14n
+
+static int c14nCert (c14nctx_t *ctx, xmlNodePtr node, xmlNodePtr parent){
+        
+    for (int i = 0; i < ctx->length; ++i) {
+        if(0 == xmlXPathCmpNodes(xmlXPathNodeSetItem(ctx->nodeset, i), node)) {
+            return 1;
+        }
+    }
+    
+    return 0;
+}
+
+static void c14n_node_xpath(xmlDocPtr doc,
+                            xmlNodePtr certNode,
+                            const xmlChar *xpath,
+                            xmlSecTransformId digestMethod,
+                            xmlString& hash) {
+    
+    xmlOutputBufferPtr buf = xmlAllocOutputBuffer(NULL);
+    
+    if(buf) {
+        xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
+        if(ctx) {
+            xmlXPathObjectPtr nodes = xmlXPathNodeEval(certNode,
+                                                       xpath,
+                                                       ctx);
+            if(nodes) {
+        
+                c14nctx_t c14ctx;
+                c14ctx.doc = doc;
+                c14ctx.anchor = certNode;
+                c14ctx.length = nodes->nodesetval->nodeNr;
+                c14ctx.nodeset = nodes->nodesetval;
+            
+                xmlC14NExecute(doc,
+                                (xmlC14NIsVisibleCallback)c14nCert,
+                               &c14ctx,
+                               XML_C14N_1_0,
+                               NULL,
+                               0 /* with_comments=no */,
+                               buf);
+                
+                xmlString hash = xmlOutputBufferGetContent(buf);
+                getHash(hash, digestMethod);
+                
+                xmlXPathFreeObject(nodes);
+            }
+            xmlXPathFreeContext(ctx);
+        }
+        xmlOutputBufferClose(buf);
+    }
+    
+}
+
+static void putXades(PA_ObjectRef options,
+                     xmlDocPtr doc,
+                     xmlNodePtr signNode,
+                     xmlSecTransformId digestMethod,
+                     xmlSecDSigCtxPtr pDsigCtx,
+                     xmlString& xmldsig_ns,
+                     C_BLOB& Param4) {
+    
+    xmlString unsignedProperties_id;
+    xmlString xades_ns = BAD_CAST"xades";
+    xmlNsPtr dsNs = NULL;
+    
+    if(options) {
+        
+        CUTF8String textValue;
+        
+        PA_ObjectRef xades = ob_get_o(options, L"xades");
+     
+        if(xades) {
+
+            if(ob_get_s(xades, L"ns", &textValue)) {
+                xades_ns = BAD_CAST textValue.c_str();
+            }
+            
+#pragma mark QualifyingProperties
+
+            PA_ObjectRef qualifyingProperties = ob_get_o(xades, L"qualifyingProperties");
+            if(qualifyingProperties) {
+                xmlNodePtr rootNode = xmlDocGetRootElement(doc);
+                xmlNodePtr qualifyingPropertiesNode = xadesCreateQualifyingPropertiesNode(options,
+                                                                                          doc,
+                                                                                          signNode,
+                                                                                          xmldsig_ns,
+                                                                                          xades_ns);
+                if(qualifyingPropertiesNode) {
+                    
+                    xmlNsPtr dsNs = xmlNewNs(qualifyingPropertiesNode,
+                                             BAD_CAST "http://www.w3.org/2000/09/xmldsig#",
+                                             xmldsig_ns.c_str());
+                    xmlSetNs(qualifyingPropertiesNode, dsNs);
+                    
+                    xmlNsPtr xadesNs = xmlNewNs(qualifyingPropertiesNode,
+                                                BAD_CAST "http://uri.etsi.org/01903/v1.3.2#",
+                                                xades_ns.c_str());
+                    xmlSetNs(qualifyingPropertiesNode, xadesNs);
+                    
+#pragma mark SignedProperties
+                    
+                    xmlNodePtr signedPropertiesNode = xmlNewNode(xadesNs, BAD_CAST "SignedProperties");
+
+                    if(signedPropertiesNode) {
+                        xmlAddChild(qualifyingPropertiesNode, signedPropertiesNode);
+                        if(ob_get_s(qualifyingProperties, L"signedProperties_id", &textValue)) {
+                            xmlString signedProperties_id = BAD_CAST textValue.c_str();
+                            if(signedProperties_id.length()) {
+                                xmlSetProp(signedPropertiesNode, BAD_CAST "Id", signedProperties_id.c_str());
+                                xmlString signedProperties_uri = BAD_CAST "#";
+                                                                signedProperties_uri += signedProperties_id;
+                                                                xmlNodePtr refNode = xmlSecTmplSignatureAddReference(signNode,
+                                                                                                                     digestMethod,
+                                                                                                                     NULL,
+                                                                                                                     signedProperties_uri.c_str(),
+                                                                                                                     NULL);
+                            }
+                        }
+                    
+#pragma mark SignedProperties > SignedSignatureProperties
+                        
+                        xmlNodePtr signedSignaturePropertiesNode = xmlNewNode(xadesNs, BAD_CAST "SignedSignatureProperties");
+                        
+                        if(signedSignaturePropertiesNode) {
+                            xmlAddChild(signedPropertiesNode, signedSignaturePropertiesNode);
+                            PA_ObjectRef signedProperties = ob_get_o(qualifyingProperties, L"signedProperties");
+                            if(signedProperties) {
+                                PA_ObjectRef signedSignatureProperties = ob_get_o(signedProperties, L"signedSignatureProperties");
+                                if(signedSignatureProperties) {
+                                                                        
+#pragma mark SignedProperties > SigningTime
+                                        
+                                    if(ob_get_s(signedSignatureProperties, L"signingTime", &textValue)) {
+                                        xmlString signingTime = BAD_CAST textValue.c_str();
+                                        if(signingTime.length()) {
+                                            xmlNodePtr signingTimeNode = xmlNewNode(xadesNs, BAD_CAST "SigningTime");
+                                            xmlAddChild(signedSignaturePropertiesNode, signingTimeNode);
+                                            xmlNodeSetContent(signingTimeNode, signingTime.c_str());
+                                        }
+                                    }
+
+#pragma mark SignedProperties > SigningCertificate
+                                    
+                                    //use BLOB
+                                    
+                                    if(Param4.getBytesLength()) {
+                                        
+                                        xmlNodePtr signingCertificateNode = xmlNewNode(xadesNs, BAD_CAST "SigningCertificate");
+                                        xmlAddChild(signedSignaturePropertiesNode, signingCertificateNode);
+                                        xmlNodePtr certNode = xmlNewNode(xadesNs, BAD_CAST "Cert");
+                                        xmlAddChild(signingCertificateNode, certNode);
+                                        xmlNodePtr certDigestNode = xmlNewNode(xadesNs, BAD_CAST "CertDigest");
+                                        xmlAddChild(certNode, certDigestNode);
+                                        xmlNodePtr issuerSerialNode = xmlNewNode(xadesNs, BAD_CAST "IssuerSerial");
+                                        xmlAddChild(certNode, issuerSerialNode);
+                                        
+                                        xmlString hash;
+                                        
+                                        getHash(Param4, hash, digestMethod);
+
+                                        xmlNodePtr digestMethodNode = xmlNewNode(dsNs, BAD_CAST "DigestMethod");
+                                        xmlNodePtr digestValueNode = xmlNewNode(dsNs, BAD_CAST "DigestValue");
+                                        xmlAddChild(certDigestNode, digestMethodNode);
+                                        xmlAddChild(certDigestNode, digestValueNode);
+                                        xmlSetProp(digestMethodNode, BAD_CAST "Algorithm", digestMethod->name);
+                                        xmlNodeSetContent(digestValueNode, BAD_CAST hash.c_str());
+                                    }
+                                    
+                                    if(0) {
+                                        PA_ObjectRef signingCertificate = ob_get_o(signedSignatureProperties, L"signingCertificate");
+                                        if(signingCertificate) {
+                                            xmlNodePtr signingCertificateNode = xmlNewNode(xadesNs, BAD_CAST "SigningCertificate");
+                                            xmlAddChild(signedSignaturePropertiesNode, signingCertificateNode);
+                                            PA_CollectionRef cert = ob_get_c(signingCertificate, L"cert");
+                                            if(cert) {
+                                                for(PA_ulong32 i = 0; i < PA_GetCollectionLength(cert); ++i) {
+                                                    PA_Variable v = PA_GetCollectionElement(cert, i);
+                                                    if(PA_GetVariableKind(v) == eVK_Object) {
+                                                        PA_ObjectRef o = PA_GetObjectVariable(v);
+                                                        if(o) {
+                                                            xmlNodePtr certNode = xmlNewNode(xadesNs, BAD_CAST "Cert");
+                                                            xmlAddChild(signingCertificateNode, certNode);
+                                                            xmlNodePtr certDigestNode = xmlNewNode(xadesNs, BAD_CAST "CertDigest");
+                                                            xmlAddChild(certNode, certDigestNode);
+                                                            xmlNodePtr issuerSerialNode = xmlNewNode(xadesNs, BAD_CAST "IssuerSerial");
+                                                            xmlAddChild(certNode, issuerSerialNode);
+                                                            PA_ObjectRef issuerSerial = ob_get_o(o, L"issuerSerial");
+                                                            if(issuerSerial) {
+                                                                if(ob_get_s(issuerSerial, L"X509IssuerName", &textValue)){
+                                                                    if(textValue.length()) {
+                                                                        xmlString X509IssuerName = BAD_CAST textValue.c_str();
+                                                                        xmlSecTmplX509IssuerSerialAddIssuerName(issuerSerialNode, X509IssuerName.c_str());
+                                                                    }
+                                                                }
+                                                                if(ob_get_s(issuerSerial, L"X509SerialNumber", &textValue)){
+                                                                    if(textValue.length()) {
+                                                                        xmlString X509SerialNumber = BAD_CAST textValue.c_str();
+                                                                        xmlSecTmplX509IssuerSerialAddSerialNumber(issuerSerialNode, X509SerialNumber.c_str());
+                                                                    }
+                                                                }
+                                                                      
+                                                                xmlString hash;
+                                                                
+                                                                /*
+                                                                c14n_node_xpath(doc, certNode, BAD_CAST "descendant-or-self::node()",
+                                                                                digestMethod, hash);
+                                                                */
+                                                                
+                                                                getHash(Param4, hash, digestMethod);
+                                                                
+                                                                xmlNodePtr digestMethodNode = xmlNewNode(dsNs, BAD_CAST "DigestMethod");
+                                                                xmlNodePtr digestValueNode = xmlNewNode(dsNs, BAD_CAST "DigestValue");
+                                                                xmlAddChild(certDigestNode, digestMethodNode);
+                                                                xmlAddChild(certDigestNode, digestValueNode);
+                                                                xmlSetProp(digestMethodNode, BAD_CAST "Algorithm", digestMethod->name);
+                                                                xmlNodeSetContent(digestValueNode, BAD_CAST hash.c_str());
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+   
+#pragma mark SignedProperties > SignaturePolicyIdentifer
+                                    
+                                    PA_ObjectRef signaturePolicyIdentifer = ob_get_o(signedSignatureProperties, L"signaturePolicyIdentifer");
+                                    if(signaturePolicyIdentifer) {
+                                        PA_CollectionRef signaturePolicyId = ob_get_c(signaturePolicyIdentifer, L"signaturePolicyId");
+                                        if(signaturePolicyId) {
+                                            
+                                        }
+                                    }
+
+#pragma mark SignedProperties > SignatureProductionPlace
+                                    
+#pragma mark SignedProperties > SignerRole
+                                    
+                                    PA_ObjectRef signerRole = ob_get_o(signedSignatureProperties, L"signerRole");
+                                    if(signerRole) {
+                                        xmlNodePtr signerRoleNode = xmlNewNode(xadesNs, BAD_CAST "SignerRole");
+                                        xmlAddChild(signedSignaturePropertiesNode, signerRoleNode);
+                                        PA_CollectionRef claimedRoles = ob_get_c(signerRole, L"claimedRoles");
+                                        if(claimedRoles) {
+                                            xmlNodePtr claimedRolesNode = xmlNewNode(xadesNs, BAD_CAST "ClaimedRoles");
+                                            xmlAddChild(signerRoleNode, claimedRolesNode);
+                                            for(PA_ulong32 i = 0; i < PA_GetCollectionLength(claimedRoles); ++i) {
+                                                PA_Variable v = PA_GetCollectionElement(claimedRoles, i);
+                                                if(PA_GetVariableKind(v) == eVK_Object) {
+                                                    PA_ObjectRef o = PA_GetObjectVariable(v);
+                                                    if(o) {
+                                                        xmlNodePtr claimedRoleNode = xmlNewNode(xadesNs, BAD_CAST "ClaimedRole");
+                                                        xmlAddChild(claimedRolesNode, claimedRoleNode);
+                                                        if(ob_get_s(o, L"claimedRole", &textValue)) {
+                                                            if(textValue.length()) {
+                                                                xmlString claimedRole = BAD_CAST textValue.c_str();
+                                                                xmlNodeSetContent(claimedRoleNode, claimedRole.c_str());
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        PA_CollectionRef certifiedRoles = ob_get_c(signerRole, L"certifiedRoles");
+                                        if(certifiedRoles) {
+                                            xmlNodePtr certifiedRolesNode = xmlNewNode(xadesNs, BAD_CAST "CertifiedRoles");
+                                            xmlAddChild(signerRoleNode, certifiedRolesNode);
+                                            for(PA_ulong32 i = 0; i < PA_GetCollectionLength(certifiedRoles); ++i) {
+                                                PA_Variable v = PA_GetCollectionElement(certifiedRoles, i);
+                                                if(PA_GetVariableKind(v) == eVK_Object) {
+                                                    PA_ObjectRef o = PA_GetObjectVariable(v);
+                                                    if(o) {
+                                                        xmlNodePtr certifiedRoleNode = xmlNewNode(xadesNs, BAD_CAST "CertifiedRole");
+                                                        xmlAddChild(certifiedRolesNode, certifiedRoleNode);
+                                                        if(ob_get_s(o, L"certifiedRole", &textValue)) {
+                                                            if(textValue.length()) {
+                                                                xmlString certifiedRole = BAD_CAST textValue.c_str();
+                                                                xmlNodeSetContent(certifiedRoleNode, certifiedRole.c_str());
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        
+ 
+#pragma mark SignedDataObjectProperties
+              
+                            PA_ObjectRef signedDataObjectProperties = ob_get_o(signedProperties, L"signedDataObjectProperties");
+                            if(signedDataObjectProperties) {
+                                xmlNodePtr signedDataObjectPropertiesNode = xmlNewNode(xadesNs, BAD_CAST "SignedDataObjectProperties");
+                                xmlAddChild(signedPropertiesNode, signedDataObjectPropertiesNode);
+                                PA_CollectionRef dataObjectFormats = ob_get_c(signedDataObjectProperties, L"dataObjectFormat");
+                                if(dataObjectFormats) {
+                                    for(PA_ulong32 i = 0; i < PA_GetCollectionLength(dataObjectFormats); ++i) {
+                                        PA_Variable v = PA_GetCollectionElement(dataObjectFormats, i);
+                                        if(PA_GetVariableKind(v) == eVK_Object) {
+                                            PA_ObjectRef o = PA_GetObjectVariable(v);
+                                            if(o) {
+                                               
+#pragma mark SignedDataObjectProperties > DataObjectFormat
+                                                
+                                                xmlNodePtr dataObjectFormatNode = xmlNewNode(xadesNs, BAD_CAST "DataObjectFormat");
+                                                xmlAddChild(signedDataObjectPropertiesNode, dataObjectFormatNode);
+                                                if(ob_get_s(o, L"reference_id", &textValue)) {
+                                                    if(textValue.length()) {
+                                                        xmlString reference_id = BAD_CAST textValue.c_str();
+                                                        xmlString objectReference = BAD_CAST "#";
+                                                        objectReference += reference_id;
+                                                        xmlSetProp(dataObjectFormatNode, BAD_CAST "ObjectReference", objectReference.c_str());
+                                                        
+                                                        xmlNodePtr refNode = xmlSecTmplSignatureAddReference(signNode,
+                                                                                                             digestMethod,
+                                                                                                             reference_id.c_str(),
+                                                                                                             BAD_CAST "",
+                                                                                                             BAD_CAST "http://www.w3.org/2000/09/xmldsig#Object");
+                                                    }
+                                                }
+                                                
+#pragma mark SignedDataObjectProperties > DataObjectFormat > Description
+                                                
+                                                if(ob_get_s(o, L"description", &textValue)) {
+                                                    xmlNodePtr descriptionNode = xmlNewNode(xadesNs, BAD_CAST "Description");
+                                                    xmlAddChild(dataObjectFormatNode, descriptionNode);
+                                                    if(textValue.length()) {
+                                                        xmlString description = BAD_CAST textValue.c_str();
+                                                        xmlNodeSetContent(descriptionNode, description.c_str());
+                                                    }
+                                                }
+
+#pragma mark SignedDataObjectProperties > DataObjectFormat > ObjectIdentifierType
+                                                
+                                                PA_ObjectRef objectIdentifier = ob_get_o(o, L"objectIdentifier");
+                                                if(objectIdentifier) {
+                                                    xmlNodePtr objectIdentifierNode = xmlNewNode(xadesNs, BAD_CAST "ObjectIdentifier");
+                                                    xmlNodePtr identifierNode = xmlNewNode(xadesNs, BAD_CAST "Identifier");
+                                                    xmlNodePtr descriptionNode = xmlNewNode(xadesNs, BAD_CAST "Description");
+                                                    xmlAddChild(dataObjectFormatNode, objectIdentifierNode);
+                                                    xmlAddChild(objectIdentifierNode, identifierNode);
+                                                    xmlAddChild(objectIdentifierNode, descriptionNode);
+                                                    if(ob_get_s(objectIdentifier, L"identifier", &textValue)){
+                                                        xmlString identifier = BAD_CAST textValue.c_str();
+                                                        xmlNodeSetContent(identifierNode, identifier.c_str());
+                                                    }
+                                                    if(ob_get_s(objectIdentifier, L"identifier_qualifier", &textValue)){
+                                                        if(textValue.length()) {
+                                                            xmlString identifier_qualifier = BAD_CAST textValue.c_str();
+                                                            xmlSetProp(identifierNode, BAD_CAST "Qualifier", identifier_qualifier.c_str());
+                                                        }
+                                                    }
+                                                    if(ob_get_s(objectIdentifier, L"description", &textValue)){
+                                                        if(textValue.length()) {
+                                                            xmlString description = BAD_CAST textValue.c_str();
+                                                            xmlNodeSetContent(descriptionNode, description.c_str());
+                                                        }
+                                                    }
+                                                }
+                                                
+                                                //DocumentationReferences
+                                                
+#pragma mark SignedDataObjectProperties > DataObjectFormat > MimeType
+                                                
+                                                if(ob_get_s(o, L"mimeType", &textValue)) {
+                                                    xmlNodePtr mimeTypeNode = xmlNewNode(xadesNs, BAD_CAST "MimeType");
+                                                    xmlAddChild(dataObjectFormatNode, mimeTypeNode);
+                                                    if(textValue.length()) {
+                                                        xmlString mimeType = BAD_CAST textValue.c_str();
+                                                        xmlNodeSetContent(mimeTypeNode, mimeType.c_str());
+                                                    }
+                                                }
+
+#pragma mark SignedDataObjectProperties > DataObjectFormat > Encoding
+                                                
+                                                if(ob_get_s(o, L"encoding", &textValue)) {
+                                                    xmlNodePtr encodingNode = xmlNewNode(xadesNs, BAD_CAST "Encoding");
+                                                    xmlAddChild(dataObjectFormatNode, encodingNode);
+                                                    if(textValue.length()) {
+                                                        xmlString encoding = BAD_CAST textValue.c_str();
+                                                        xmlNodeSetContent(encodingNode, encoding.c_str());
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+#pragma mark -
+
+static xmlSecDSigCtxPtr createSignatureContext(PA_ObjectRef options,
+                                               xmlSecKeysMngrPtr keysMngr) {
+    
+    xmlSecDSigCtxPtr pDsigCtx = NULL;
+    
+    pDsigCtx = xmlSecDSigCtxCreate(keysMngr);
+    
+    if(pDsigCtx) {
+        
+        //for verify!
+        
+        pDsigCtx->enabledReferenceUris = xmlSecTransformUriTypeAny;
+        
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformBase64Id);
+        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformInclC14NId);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformInclC14NWithCommentsId);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformInclC14N11Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformInclC14N11WithCommentsId);
+        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformExclC14NId);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformExclC14NWithCommentsId);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformEnvelopedId);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformXPathId);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformXPath2Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformXPointerId);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformRelationshipId);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformXsltId);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformRemoveXmlTagsC14NId);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformVisa3DHackId);
+        
+        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformSha1Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformSha224Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformSha256Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformSha384Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformSha512Id);
+        
+        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformRsaSha1Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformRsaSha224Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformRsaSha256Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformRsaSha384Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformRsaSha512Id);
+
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformHmacSha1Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformHmacSha224Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformHmacSha256Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformHmacSha384Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformHmacSha512Id);
+        
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformEcdsaSha1Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformEcdsaSha224Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformEcdsaSha256Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformEcdsaSha384Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformEcdsaSha512Id);
+        
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformDsaSha1Id);
+//        xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformDsaSha256Id);
+
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformBase64Id);
+        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformInclC14NId);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformInclC14NWithCommentsId);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformInclC14N11Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformInclC14N11WithCommentsId);
+        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformExclC14NId);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformExclC14NWithCommentsId);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformEnvelopedId);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformXPathId);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformXPath2Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformXPointerId);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformRelationshipId);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformXsltId);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformRemoveXmlTagsC14NId);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformVisa3DHackId);
+    
+        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformSha1Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformSha224Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformSha256Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformSha384Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformSha512Id);
+        
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformRsaSha1Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformRsaSha224Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformRsaSha256Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformRsaSha384Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformRsaSha512Id);
+
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformHmacSha1Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformHmacSha224Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformHmacSha256Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformHmacSha384Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformHmacSha512Id);
+        
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformEcdsaSha1Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformEcdsaSha224Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformEcdsaSha256Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformEcdsaSha384Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformEcdsaSha512Id);
+        
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformDsaSha1Id);
+//        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformDsaSha256Id);
+        
+        xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformEnvelopedId);
+
+        xmlSecPtrListAdd(&(pDsigCtx->keyInfoReadCtx.enabledKeyData), BAD_CAST xmlSecKeyDataAesId);
+        xmlSecPtrListAdd(&(pDsigCtx->keyInfoReadCtx.enabledKeyData), BAD_CAST xmlSecKeyDataDesId);
+
+        xmlSecPtrListAdd(&(pDsigCtx->keyInfoReadCtx.enabledKeyData), BAD_CAST xmlSecKeyDataDsaId);
+        xmlSecPtrListAdd(&(pDsigCtx->keyInfoReadCtx.enabledKeyData), BAD_CAST xmlSecKeyDataEcdsaId);
+
+        xmlSecPtrListAdd(&(pDsigCtx->keyInfoReadCtx.enabledKeyData), BAD_CAST xmlSecKeyDataHmacId);
+        xmlSecPtrListAdd(&(pDsigCtx->keyInfoReadCtx.enabledKeyData), BAD_CAST xmlSecKeyDataRsaId);
+
+        xmlSecPtrListAdd(&(pDsigCtx->keyInfoReadCtx.enabledKeyData), BAD_CAST xmlSecKeyDataX509Id);
+        xmlSecPtrListAdd(&(pDsigCtx->keyInfoReadCtx.enabledKeyData), BAD_CAST xmlSecKeyDataRawX509CertId);
+         
+        
+    }
+    
+    return pDsigCtx;
+}
+
+
+static xmlSecDSigCtxPtr createSignatureContextForSign(PA_ObjectRef options,
+                                                      xmlSecKeysMngrPtr keysMngr) {
+
+    xmlSecDSigCtxPtr pDsigCtx = NULL;
+    
+    pDsigCtx = xmlSecDSigCtxCreate(keysMngr);
+    
+    if(pDsigCtx) {
+
+        if(options) {
+            
+            bool ignoreManifests = false;
+            bool storeReferences = false;
+            bool storeSignatures = false;
+            bool enableVisa3DHack = false;
+            
+            if(ob_is_defined(options, L"ignoreManifests")) {
+                ignoreManifests = ob_get_b(options, L"ignoreManifests");
+            }
+            
+            if(ob_is_defined(options, L"storeReferences")) {
+                storeReferences = ob_get_b(options, L"storeReferences");
+            }
+            
+            if(ob_is_defined(options, L"storeSignatures")) {
+                storeSignatures = ob_get_b(options, L"storeSignatures");
+            }
+            
+            if(ob_is_defined(options, L"enableVisa3DHack")) {
+                enableVisa3DHack = ob_get_b(options, L"enableVisa3DHack");
+            }
+            
+            //--ignore-manifests
+            if(ignoreManifests) {
+                pDsigCtx->flags |= XMLSEC_DSIG_FLAGS_IGNORE_MANIFESTS;
+            }
+            
+            //--store-references
+            if(storeReferences) {
+                pDsigCtx->flags |= XMLSEC_DSIG_FLAGS_STORE_SIGNEDINFO_REFERENCES |
+                XMLSEC_DSIG_FLAGS_STORE_MANIFEST_REFERENCES;
+            }
+            
+            //--store-signatures
+            if(storeSignatures) {
+                pDsigCtx->flags |= XMLSEC_DSIG_FLAGS_STORE_SIGNATURE;
+            }
+            
+            //--enable-visa3d-hack
+            if(enableVisa3DHack) {
+                pDsigCtx->flags |= XMLSEC_DSIG_FLAGS_USE_VISA3D_HACK;
+            }
+            
+        }
+
+    }
+    
+    return pDsigCtx;
+}
+
+static void doIt(PA_PluginParameters params,
+                 xmlsec_command_t command,
+                 int cb(xmlSecDSigCtxPtr dsigCtx, xmlNodePtr node)) {
+                     
     PA_ObjectRef options = PA_GetObjectParameter(params, 1);
     PA_ObjectRef status  = PA_CreateObject();
-    
+
     const xmlChar *crypto = xmlSecGetDefaultCrypto();
-    ob_set_s(status, L"crypto", (const char *)crypto);
-    
+    ob_set_s(status, L"crypto", (const char *)crypto);//currently using OpenSSL engine
     ob_set_b(status, L"success", false);
-    
+
     PackagePtr pParams = (PackagePtr)params->fParameters;
-    
+
     C_BLOB Param2;
     Param2.fromParamAtIndex(pParams, 2);//key
-    
-    C_BLOB Param3;
-    Param3.fromParamAtIndex(pParams, 3);//x509 cert
-    
+
+    PA_Variable Param3 = PA_GetVariableParameter(params, 3);//cert[]
+                     
     xsltSecurityPrefsPtr xsltSecPrefs = createSecurityPrefs();
     
     if(xmlSecCryptoAppInit(NULL) == 0) {
         if(xmlSecInit() == 0) {
             if(xmlSecCryptoInit() == 0) {
                 
-                xmlDocPtr doc = NULL;
-                xmlSecKeyDataFormat keyFmt = xmlSecKeyDataFormatPem;
-                xmlSecKeyDataFormat crtFmt = xmlSecKeyDataFormatPem;
+                xmlSecKeysMngrPtr keysMngr = xmlSecKeysMngrCreate();
+                xmlSecDSigCtxPtr pDsigCtx = createSignatureContextForSign(options, keysMngr);
                 
-                xmlString name;//->xmlSecKeySetName
-                
-                bool ignoreManifests = false;
-                bool storeReferences = false;
-                bool storeSignatures = false;
-                bool enableVisa3DHack = false;
-                
-                bool signTmpl = false;
-                
-                if(options) {
+                if(pDsigCtx) {
                     
-                    keyFmt = getFmt(options, L"key");
-                    crtFmt = getFmt(options, L"cert");
+                    xmlDocPtr doc = NULL;
+                    xmlSecKeyDataFormat keyFmt = getFmt(options, L"key");
+                    xmlSecKeyDataFormat crtFmt = getFmt(options, L"cert");
                     
-                    CUTF8String textValue;
-                    
-                    if(ob_get_s(options, L"name", &textValue)) {
-                        name = (const xmlChar *)textValue.c_str();
+                    xmlString name;//->xmlSecKeySetName
+                               
+                    xmlSecTransformId digestMethod = getDigestMethod(options, L"digest");
+
+                    if(options) {
+                        
+                        CUTF8String textValue;
+                        
+                        if(ob_get_s(options, L"name", &textValue)) {
+                            name = BAD_CAST textValue.c_str();
+                        }
+                                                                        
+                        doc = parseXml(options, L"xml");
+                        
                     }
+
+                    xmlNodePtr signNode = NULL;
+                    xmlNodePtr refNode = NULL;
                     
-                    if(ob_is_defined(options, L"ignoreManifests")) {
-                        ignoreManifests = ob_get_b(options, L"ignoreManifests");
-                    }
-                    
-                    if(ob_is_defined(options, L"storeReferences")) {
-                        storeReferences = ob_get_b(options, L"storeReferences");
-                    }
-                    
-                    if(ob_is_defined(options, L"storeSignatures")) {
-                        storeSignatures = ob_get_b(options, L"storeSignatures");
-                    }
-                    
-                    if(ob_is_defined(options, L"enableVisa3DHack")) {
-                        enableVisa3DHack = ob_get_b(options, L"enableVisa3DHack");
-                    }
-                    
-                    if(ob_is_defined(options, L"tmpl")) {
-                        signTmpl = ob_get_b(options, L"tmpl");
-                    }
-                    
-                    doc = parseXml(options, L"xml");
-                    
-                }
-                
-                if(doc) {
-                    
-                    if(signTmpl) {
-                        /* create signature template for RSA-SHA1 enveloped signature */
-                        xmlNodePtr signNode = xmlSecTmplSignatureCreate(doc,
-                                                                        xmlSecTransformExclC14NId,
-                                                                        xmlSecTransformRsaSha1Id,
-                                                                        NULL);
-                        if(signNode) {
-                            //<dsig:Signature/>
-                            xmlNodePtr childNode = xmlAddChild(xmlDocGetRootElement(doc), signNode);
-                            if(childNode) {
-                                
-                            }else{
-                                ob_set_s(status, L"error", (const char *)"failed:xmlAddChild");
-                            }
-                            
-                            xmlNodePtr refNode = xmlSecTmplSignatureAddReference(signNode,
-                                                                                 xmlSecTransformSha1Id,
-                                                                                 NULL, NULL, NULL);
-                            if(refNode) {
-                                if(xmlSecTmplReferenceAddTransform(refNode, xmlSecTransformEnvelopedId)) {
-                                    //<dsig:KeyInfo/> and <dsig:KeyName/>
-                                    xmlNodePtr keyInfoNode = xmlSecTmplSignatureEnsureKeyInfo(signNode, NULL);
-                                    if(keyInfoNode) {
-                                        if(Param3.getBytesLength()) {
-                                            xmlNodePtr x509DataNode = xmlSecTmplKeyInfoAddX509Data(keyInfoNode);
-                                            if(x509DataNode) {
-                                                if(xmlSecTmplX509DataAddSubjectName(x509DataNode)) {
-                                                    if(xmlSecTmplX509DataAddCertificate(x509DataNode)) {
-                                                    
-                                                    }else{
-                                                        ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplX509DataAddCertificate");
-                                                    }
-                                                }else{
-                                                    ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplX509DataAddSubjectName");
-                                                }
-                                            }else{
-                                                ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplKeyInfoAddX509Data");
-                                            }
-                                        }else{
-                                            if(xmlSecTmplKeyInfoAddKeyName(keyInfoNode, NULL)) {
+                    if(doc) {
                                                 
-                                            }else{
-                                                ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplKeyInfoAddKeyName");
-                                            }
+                        xmlSecKeyPtr secKey = NULL;
+                        
+                        if(command == xmlsec_command_sign) {
+                            
+                            if(!getSignatureNode(doc)) {
+                                
+                                signNode = createSignNode(options, doc);
+                                
+                                if(signNode) {
+
+                                    refNode = createRefNode(options, signNode, digestMethod);
+                                    
+                                    if(refNode) {
+                                        
+                                        if(xmlSecTmplReferenceAddTransform(refNode, xmlSecTransformEnvelopedId)) {
+                                            
+//                                            xmlNodePtr keyInfoNode = putKeyInfo(signNode, digestMethod, options, Param3);
+      
+//                                            putXades(options, doc, signNode, digestMethod, pDsigCtx, xmldsig_ns, Param4);
+                                            
+                                        }else{
+                                            ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplReferenceAddTransform");
                                         }
                                     }else{
-                                        ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplSignatureEnsureKeyInfo");
+                                        ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplSignatureAddReference");
                                     }
                                 }else{
-                                    ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplReferenceAddTransform");
+                                    ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplSignatureCreate");
                                 }
-                            }else{
-                                ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplSignatureAddReference");
+                                
                             }
-                        }else{
-                            ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplSignatureCreate");
-                        }
-                    }
-                    
-                    xmlNodePtr node = getSignatureNode(doc);
-                    xmlSecKeyPtr secKey = NULL;
-                    xmlSecDSigCtxPtr pDsigCtx = NULL;
-                    
-                    if(node) {
-                        
-                        xmlSecKeysMngrPtr keysMngr = xmlSecKeysMngrCreate();
-                        
-                        if(keysMngr) {
-                            
-                            if(xmlSecCryptoAppDefaultKeysMngrInit(keysMngr) == 0) {
-                                
-                                if(Param2.getBytesLength()) {
-                                    
-                                    secKey = loadKey(options, Param2, keyFmt);
-                                    
-                                    if(secKey) {
-                                        
-                                        if(name.length()) {
-                                            if(xmlSecKeySetName(secKey, name.c_str()) != 0) {
-                                                ob_set_s(status, L"error", (const char *)"failed:xmlSecKeySetName");
-                                            }
-                                        }
-                                        if(xmlSecCryptoAppDefaultKeysMngrAdoptKey(keysMngr, secKey) == 0){
-                                            
-                                        }else{
-                                            ob_set_s(status, L"error", (const char *)"failed:xmlSecCryptoAppDefaultKeysMngrAdoptKey");
-                                        }
-                                    }else{
-                                        ob_set_s(status, L"error", (const char *)"failed:xmlSecCryptoAppKeyLoadMemory");
-                                    }
-                                    
-                                    if(Param3.getBytesLength()) {
-                                        
-                                        if(loadCert(secKey, Param3, crtFmt)==0) {
-                                            
-                                        }else{
-                                            ob_set_s(status, L"error", (const char *)"failed:xmlSecOpenSSLAppKeyCertLoadMemory");
-                                        }
-                                        
-                                    }
-                                    
-                                }
-                                
-                                pDsigCtx = xmlSecDSigCtxCreate(keysMngr);
 
-                                if(pDsigCtx) {
+                        }
+                        
+                        xmlNodePtr node = getSignatureNode(doc);
+                        
+                        if(node) {
+
+                            if(keysMngr) {
+                                
+                                if(xmlSecCryptoAppDefaultKeysMngrInit(keysMngr) == 0) {
                                     
-                                    if(command == xmlsec_command_verify) {
-                                    }
-                                    
-                                    
-                                    if(command == xmlsec_command_verify) {
+                                    if(Param2.getBytesLength()) {
                                         
-                                        /* limit the Reference URI attributes to empty or NULL */
-                                        pDsigCtx->enabledReferenceUris = xmlSecTransformUriTypeEmpty;
+                                        secKey = loadKey(options, Param2, keyFmt);
                                         
-                                        /* limit allowed transforms for signature and reference processing */
-                                        if(   (xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformInclC14NId) == 0)
-                                           && (xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformExclC14NId) == 0)
-                                           && (xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformSha1Id) == 0)
-                                           && (xmlSecDSigCtxEnableSignatureTransform(pDsigCtx, xmlSecTransformRsaSha1Id) == 0)) {
+                                        if(secKey) {
                                             
+                                            if(name.length()) {
+                                                if(xmlSecKeySetName(secKey, name.c_str()) != 0) {
+                                                    ob_set_s(status, L"error", (const char *)"failed:xmlSecKeySetName");
+                                                }
+                                            }
+                                            if(xmlSecCryptoAppDefaultKeysMngrAdoptKey(keysMngr, secKey) == 0){
+                                                
+                                            }else{
+                                                ob_set_s(status, L"error", (const char *)"failed:xmlSecCryptoAppDefaultKeysMngrAdoptKey");
+                                            }
+                                        }else{
+                                            ob_set_s(status, L"error", (const char *)"failed:xmlSecCryptoAppKeyLoadMemory");
                                         }
-                                        if(   (xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformInclC14NId) == 0)
-                                           && (xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformExclC14NId) == 0)
-                                           && (xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformSha1Id) == 0)
-                                           && (xmlSecDSigCtxEnableReferenceTransform(pDsigCtx, xmlSecTransformEnvelopedId) == 0)) {
-                                            
-                                        }
-                                        
-                                        /* in addition, limit possible key data to valid X509 certificates only */
-                                        if(xmlSecPtrListAdd(&(pDsigCtx->keyInfoReadCtx.enabledKeyData), BAD_CAST xmlSecKeyDataX509Id) == 0) {
-                                            
-                                        }
+
+                                        loadCerts(options, signNode, secKey, crtFmt, Param3);
+                                           
                                     }
-                                        
-                                    //--ignore-manifests
-                                    if(ignoreManifests) {
-                                        pDsigCtx->flags |= XMLSEC_DSIG_FLAGS_IGNORE_MANIFESTS;
-                                    }
-                                    
-                                    //--store-references
-                                    if(storeReferences) {
-                                        pDsigCtx->flags |= XMLSEC_DSIG_FLAGS_STORE_SIGNEDINFO_REFERENCES |
-                                        XMLSEC_DSIG_FLAGS_STORE_MANIFEST_REFERENCES;
-                                    }
-                                    
-                                    //--store-signatures
-                                    if(storeSignatures) {
-                                        pDsigCtx->flags |= XMLSEC_DSIG_FLAGS_STORE_SIGNATURE;
-                                    }
-                                    
-                                    //--enable-visa3d-hack
-                                    if(enableVisa3DHack) {
-                                        pDsigCtx->flags |= XMLSEC_DSIG_FLAGS_USE_VISA3D_HACK;
-                                    }
-                                        
+
                                     switch (command) {
                                         case xmlsec_command_sign:
                                             if(cb(pDsigCtx, node) == 0) {
@@ -573,23 +1532,24 @@ static void doIt(PA_PluginParameters params, xmlsec_command_t command, int cb(xm
                                         default:
                                             break;
                                     }
-                                    
-                                    xmlSecDSigCtxDestroy (pDsigCtx);
-                                }else{
-                                    ob_set_s(status, L"error", (const char *)"failed:xmlSecDSigCtxCreate");
                                 }
+                                xmlSecKeysMngrDestroy(keysMngr);
+                            }else{
+                                ob_set_s(status, L"error", (const char *)"failed:xmlSecKeysMngrCreate");
                             }
-                            xmlSecKeysMngrDestroy(keysMngr);
                         }else{
-                            ob_set_s(status, L"error", (const char *)"failed:xmlSecKeysMngrCreate");
+                            ob_set_s(status, L"error", (const char *)"failed:xmlSecFindNode:xmlSecNodeSignature:xmlSecDSigNs");
                         }
+                        xmlFreeDoc(doc);
                     }else{
-                        ob_set_s(status, L"error", (const char *)"failed:xmlSecFindNode:xmlSecNodeSignature:xmlSecDSigNs");
+                        ob_set_s(status, L"error", (const char *)"failed:xmlParseDoc");
                     }
-                    xmlFreeDoc(doc);
+
+                    xmlSecDSigCtxDestroy (pDsigCtx);
                 }else{
-                    ob_set_s(status, L"error", (const char *)"failed:xmlParseDoc");
+                    ob_set_s(status, L"error", (const char *)"failed:xmlSecDSigCtxCreate");
                 }
+                
                 xmlSecCryptoShutdown();
             }
             xmlSecShutdown();
@@ -606,13 +1566,17 @@ static void doIt(PA_PluginParameters params, xmlsec_command_t command, int cb(xm
 
 static void xmlsec_sign(PA_PluginParameters params) {
     
-    doIt(params, xmlsec_command_sign, xmlSecDSigCtxSign);
+    doIt(params,
+         xmlsec_command_sign,
+         xmlSecDSigCtxSign);
     
 }
 
 void xmlsec_verify(PA_PluginParameters params) {
 
-    doIt(params, xmlsec_command_verify, xmlSecDSigCtxVerify);
+    doIt(params,
+         xmlsec_command_verify,
+         xmlSecDSigCtxVerify);
     
 }
 
@@ -624,3 +1588,95 @@ void xmlsec_decrypt(PA_PluginParameters params) {
 
 }
 
+#pragma mark base64
+
+static int Base64decode_len(const char *bufcoded) {
+    
+    int nbytesdecoded;
+    const unsigned char *bufin;
+    int nprbytes;
+
+    bufin = (const unsigned char *) bufcoded;
+    while (pr2six[*(bufin++)] <= 63);
+
+    nprbytes = (int)((bufin - (const unsigned char *) bufcoded) - 1);
+    nbytesdecoded = ((nprbytes + 3) / 4) * 3;
+
+    return nbytesdecoded + 1;
+}
+
+static int Base64encode_len(int len) {
+    return ((len + 2) / 3 * 4) + 1;
+}
+
+static void Base64decode(std::vector<unsigned char>& decoded, const char *bufcoded) {
+    
+    const unsigned char *bufin;
+    unsigned char *bufout;
+    int nprbytes;
+
+    bufin = (const unsigned char *) bufcoded;
+    while (pr2six[*(bufin++)] <= 63);
+    nprbytes = (int)((bufin - (const unsigned char *) bufcoded) - 1);
+
+    unsigned char *bufplain = (unsigned char *) &decoded[0];
+    bufout = bufplain;
+    bufin = (const unsigned char *) bufcoded;
+
+    while (nprbytes > 4) {
+        *(bufout++) = (unsigned char) (pr2six[*bufin] << 2 | pr2six[bufin[1]] >> 4);
+        *(bufout++) = (unsigned char) (pr2six[bufin[1]] << 4 | pr2six[bufin[2]] >> 2);
+        *(bufout++) = (unsigned char) (pr2six[bufin[2]] << 6 | pr2six[bufin[3]]);
+        bufin += 4;
+        nprbytes -= 4;
+    }
+
+    if (nprbytes > 1)
+        *(bufout++) = (unsigned char) (pr2six[*bufin] << 2 | pr2six[bufin[1]] >> 4);
+    if (nprbytes > 2)
+        *(bufout++) = (unsigned char) (pr2six[bufin[1]] << 4 | pr2six[bufin[2]] >> 2);
+    if (nprbytes > 3)
+        *(bufout++) = (unsigned char) (pr2six[bufin[2]] << 6 | pr2six[bufin[3]]);
+
+    decoded.resize(bufout - bufplain);
+}
+
+static void Base64encode(char *encoded, const char *string, int len) {
+    int i;
+    char *p = encoded;
+
+    for (i = 0; i < len - 2; i += 3) {
+        *p++ = basis_64[(string[i] >> 2) & 0x3F];
+        *p++ = basis_64[((string[i] & 0x3) << 4) | ((int) (string[i + 1] & 0xF0) >> 4)];
+        *p++ = basis_64[((string[i + 1] & 0xF) << 2) | ((int) (string[i + 2] & 0xC0) >> 6)];
+        *p++ = basis_64[string[i + 2] & 0x3F];
+    }
+
+    if (i < len) {
+        *p++ = basis_64[(string[i] >> 2) & 0x3F];
+        if (i == (len - 1)) {
+            *p++ = basis_64[((string[i] & 0x3) << 4)];
+        } else {
+            *p++ = basis_64[((string[i] & 0x3) << 4) | ((int) (string[i + 1] & 0xF0) >> 4)];
+            *p++ = basis_64[((string[i + 1] & 0xF) << 2)];
+        }
+    }
+
+    *p++ = '\0';
+}
+
+static std::string base64_encode_uri(const unsigned char *ptr, size_t size) {
+        
+    std::vector<char> encoded(Base64encode_len((int)size));
+    
+    Base64encode((char *)&encoded[0], (const char *)ptr, (int)size);
+    
+    return std::string((char *)&encoded[0]);
+}
+
+static void base64_decode_uri(std::vector<unsigned char>& decoded, std::string encoded) {
+    
+    decoded.resize(Base64decode_len((const char *)encoded.c_str()));
+    
+    Base64decode(decoded, (const char *)encoded.c_str());
+}

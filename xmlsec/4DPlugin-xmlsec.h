@@ -29,21 +29,23 @@
 #include <string.h>
 #include <assert.h>
 
-#include <libxml/tree.h>
-#include <libxml/xmlmemory.h>
-#include <libxml/parser.h>
-#include <libxml/xpath.h>
-#include <libxml/xpathInternals.h>
-#include <xmlsec/xmlsec.h>
-#include <xmlsec/xmltree.h>
-#include <xmlsec/xmldsig.h>
-#include <xmlsec/crypto.h>
-#include <xmlsec/templates.h>
-#include <xmlsec/membuf.h>
-#include <xmlsec/errors.h>
+#include "libxml/tree.h"
+#include "libxml/xmlmemory.h"
+#include "libxml/parser.h"
+#include "libxml/xpath.h"
+#include "libxml/xpathInternals.h"
+#include "xmlsec/xmlsec.h"
+#include "xmlsec/xmltree.h"
+#include "xmlsec/xmldsig.h"
+#include "xmlsec/crypto.h"
+#include "xmlsec/templates.h"
+#include "xmlsec/membuf.h"
+#include "xmlsec/errors.h"
 
-#include <libxslt/xslt.h>
-#include <libxslt/security.h>
+#include "libxml/c14n.h"
+
+#include "libxslt/xslt.h"
+#include "libxslt/security.h"
 
 #include "C_TEXT.h"
 #include "C_BLOB.h"
@@ -61,9 +63,71 @@ typedef enum {
     
 }xmlsec_command_t;
 
+/* Original source code taken from
+ * https://svn.apache.org/repos/asf/apr/apr/trunk/encoding/apr_base64.c
+ *
+ * Changes by Michel Lang <michellang@gmail.com>:
+ * - Replaced char 62 ('+') with '-'
+ * - Replaced char 63 ('/') with '_'
+ * - Removed padding with '=' at the end of the string
+ * - Changed return type to void for Base64decode and Base64encode
+ * - Added wrappers for R
+ *
+ */
+/*
+ * base64.c:  base64 encoding and decoding functions
+ *
+ * ====================================================================
+ *    Licensed to the Apache Software Foundation (ASF) under one
+ *    or more contributor license agreements.  See the NOTICE file
+ *    distributed with this work for additional information
+ *    regarding copyright ownership.  The ASF licenses this file
+ *    to you under the Apache License, Version 2.0 (the
+ *    "License"); you may not use this file except in compliance
+ *    with the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing,
+ *    software distributed under the License is distributed on an
+ *    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *    KIND, either express or implied.  See the License for the
+ *    specific language governing permissions and limitations
+ *    under the License.
+ * ====================================================================
+ */
+
+#include <string.h>
+
+static const unsigned char pr2six[256] = {
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 62, 64, 63,
+    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 64, 64, 64, 64, 64, 64,
+    64,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 64, 64, 64, 64, 63,
+    64, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64
+};
+
+static const char basis_64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 static void xmlsec_sign(PA_PluginParameters params);
 static void xmlsec_verify(PA_PluginParameters params);
 static void xmlsec_encrypt(PA_PluginParameters params);
 static void xmlsec_decrypt(PA_PluginParameters params);
+
+static int Base64decode_len(const char *bufcoded);
+static void Base64decode(std::vector<unsigned char>& decoded, const char *bufcoded);
+static void Base64encode(char *encoded, const char *string, int len);
+static std::string base64_encode_uri(const unsigned char *ptr, size_t size);
+static void base64_decode_uri(std::vector<unsigned char>& decoded, std::string encoded);
 
 #endif /* PLUGIN_XMLSEC_H */
