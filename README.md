@@ -8,19 +8,15 @@
 # 4d-plugin-xmlsec
 XML signature based on [xmlsec](https://www.aleksey.com/xmlsec/)
 
-### Sign
+ ## XAdES tools
+ 
+ * https://www.evrotrust.com/landing/en/a/validation
 
-```4d
-$xml:=Folder(fk resources folder).folder("sign1").file("sign1-tmpl.xml")
-$rsakey:=Folder(fk resources folder).file("rsakey.pem")
 
-$params:=New object
-$params.xml:=$xml.getText()
-$params.name:="rsakey.pem"
-$keyBLOB:=$rsakey.getContent()
 
-$status:=xmlsec sign ($params;$keyBLOB) 
-```
+
+
+
 
 #### options for **sign**
 
