@@ -29,15 +29,6 @@ $params.xmldsig.ref.type:="http://www.w3.org/2000/09/xmldsig#Object"
 
   //when the xml does not contain a template, one is created according to xmldsig params
 
-If (True:C214)  //optional
-	
-	  //KeyInfo
-	$key_id:="keyInfo-"+generate_lowercase_uuid 
-	$params.xmldsig.keyInfo:=New object:C1471
-	$params.xmldsig.keyInfo.id:=$key_id
-	
-End if 
-
 $params.xmldsig.ski:=False:C215  //default:false
 $params.xmldsig.crl:=False:C215  //default:false
 $params.xmldsig.subjectName:=False:C215  //default:false

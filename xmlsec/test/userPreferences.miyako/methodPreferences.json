@@ -300,13 +300,13 @@
 		"stamp": "2021-05-29T16:44:49.417Z"
 	},
 	"Sources/Methods/xmldsig_sign_6.4dm": {
-		"startSelection": 83,
-		"endSelection": 83,
-		"firstSelectedLine": 75,
-		"lastSelectedLine": 75,
+		"startSelection": 0,
+		"endSelection": 0,
+		"firstSelectedLine": 29,
+		"lastSelectedLine": 29,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-29T19:24:40.010Z"
+		"stamp": "2021-05-29T19:38:54.934Z"
 	},
 	"Sources/Methods/xmldsig_sign_5.4dm": {
 		"startSelection": 4,
