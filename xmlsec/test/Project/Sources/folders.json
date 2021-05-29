@@ -11,11 +11,14 @@
 			"generate_project_xcode"
 		]
 	},
-	"sign": {
+	"xmldsig_sign": {
 		"methods": [
-			"sign1",
-			"sign2",
-			"sign3"
+			"xmldsig_sign_1",
+			"xmldsig_sign_2",
+			"xmldsig_sign_3",
+			"xmldsig_sign_4",
+			"xmldsig_sign_5",
+			"xmldsig_sign_6"
 		]
 	},
 	"trash": {}

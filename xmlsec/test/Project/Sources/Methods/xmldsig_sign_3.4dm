@@ -1,4 +1,4 @@
-//%attributes = {}
+//%attributes = {"invisible":true}
 /*
 
 sign - add template
@@ -35,7 +35,7 @@ $key_id:="keyInfo-"+generate_lowercase_uuid
 $params.xmldsig.keyInfo:=New object:C1471
 $params.xmldsig.keyInfo.id:=$key_id
 
-$doc:=Folder:C1567(fk resources folder:K87:11).folder("sign2").file("sign2-doc.xml")
+$doc:=Folder:C1567(fk resources folder:K87:11).folder("xmldsig_sign").file("sign-doc.xml")
 $rsakey:=Folder:C1567(fk resources folder:K87:11).file("rsakey.pem")
 $rsacert:=Folder:C1567(fk resources folder:K87:11).file("rsacert.pem")
 

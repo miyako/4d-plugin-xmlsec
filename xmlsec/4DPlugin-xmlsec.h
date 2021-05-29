@@ -15,6 +15,8 @@
 
 #if VERSIONMAC
 #import <Cocoa/Cocoa.h>
+#else
+#include <memory>
 #endif
 
 #include <stdlib.h>
@@ -124,10 +126,8 @@ static void xmlsec_verify(PA_PluginParameters params);
 static void xmlsec_encrypt(PA_PluginParameters params);
 static void xmlsec_decrypt(PA_PluginParameters params);
 
-static int Base64decode_len(const char *bufcoded);
-static void Base64decode(std::vector<unsigned char>& decoded, const char *bufcoded);
-static void Base64encode(char *encoded, const char *string, int len);
 static std::string base64_encode_uri(const unsigned char *ptr, size_t size);
+static std::string base64_encode(const unsigned char *ptr, size_t size);
 static void base64_decode_uri(std::vector<unsigned char>& decoded, std::string encoded);
 
 #endif /* PLUGIN_XMLSEC_H */

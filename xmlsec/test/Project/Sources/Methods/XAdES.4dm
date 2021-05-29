@@ -39,7 +39,7 @@ $signedProperties_id:="signedProperties-"+$uuid
 $unsignedProperties_id:="unsignedProperties-"+$uuid
 
 $XAdES.qualifyingProperties:=New object:C1471
-$XAdES.qualifyingProperties_id:=$qualifyingProperties_id  //xsd:ID; optional
+$XAdES.qualifyingProperties.id:=$qualifyingProperties_id  //xsd:ID; optional
 
 $issuerSerial:=New object:C1471
 $issuerSerial.X509IssuerName:=""  //ds:X509IssuerName
@@ -68,10 +68,12 @@ $sigPolicyId.description:=""
 $sigPolicyId.documentationReferences:=$documentationReferences  //optional
 
 $signaturePolicyId:=New collection:C1472
-$signaturePolicyId[0]:=New object:C1471
-$signaturePolicyId[0].sigPolicyId:=$sigPolicyId
-$signaturePolicyId[0].sigPolicyHash:=Null:C1517  //ds:DigestMethod,ds:DigestValue
-$signaturePolicyId[0].sigPolicyQualifiers:=$sigPolicyQualifiers
+
+If (True:C214)
+	$signaturePolicyId[0]:=New object:C1471
+	$signaturePolicyId[0].sigPolicyId:=$sigPolicyId
+	$signaturePolicyId[0].sigPolicyQualifiers:=$sigPolicyQualifiers
+End if 
 
 $signaturePolicyIdentifer:=New object:C1471
 $signaturePolicyIdentifer.signaturePolicyId:=$signaturePolicyId
@@ -87,9 +89,12 @@ $signerRole:=New object:C1471
 $signerRole.claimedRoles:=New collection:C1472
 $signerRole.claimedRoles[0]:=New object:C1471
 $signerRole.claimedRoles[0].claimedRole:=""
-$signerRole.certifiedRoles:=New collection:C1472
-$signerRole.certifiedRoles[0]:=New object:C1471
-$signerRole.certifiedRoles[0].certifiedRole:=""
+
+If (False:C215)
+	$signerRole.certifiedRoles:=New collection:C1472
+	$signerRole.certifiedRoles[0]:=New object:C1471
+	$signerRole.certifiedRoles[0].certifiedRole:=""
+End if 
 
   //SignedSignaturePropertiesType
 $signedSignatureProperties:=New object:C1471
@@ -128,14 +133,12 @@ $commitmentTypeIndication[0]:=New object:C1471
 $commitmentTypeIndication[0].commitmentTypeId:=$commitmentTypeId
 $commitmentTypeIndication[0].commitmentTypeQualifiers:=$commitmentTypeQualifiers
 
-$reference_id:="object-"+$uuid
 
 $dataObjectFormat:=New collection:C1472
 $dataObjectFormat[0]:=New object:C1471
 $dataObjectFormat[0].description:=""  //xsd:string; optional
 $dataObjectFormat[0].mimeType:=""  //xsd:string; optional
 $dataObjectFormat[0].encoding:=""  ////xsd:anyURI; optional
-$dataObjectFormat[0].reference_id:=$reference_id  //->ObjectReference
 $dataObjectFormat[0].objectIdentifier:=$objectIdentifier  //optional
 $dataObjectFormat[0].commitmentTypeIndication:=$commitmentTypeIndication
 
@@ -185,6 +188,7 @@ If (False:C215)
 	$unsignedProperties.unsignedSignatureProperties:=$unsignedSignatureProperties
 	
 	$completeCertificateRefs:=New collection:C1472
+	$completeCertificateRefs[0]:=New object:C1471
 	$completeCertificateRefs[0].certRefs:=New collection:C1472
 	
 	$completeRevocationRefs:=New collection:C1472
@@ -245,9 +249,14 @@ SignedProperties > SignedDataObjectProperties > DataObjectFormat[]
 $signedProperties.signedDataObjectProperties:=$signedDataObjectProperties
 
 $XAdES.qualifyingProperties.signedProperties:=$signedProperties
-$XAdES.qualifyingProperties.signedProperties_id:=$signedProperties_id  //xsd:ID; optional
-$XAdES.qualifyingProperties.unsignedProperties:=$unsignedProperties
-$XAdES.qualifyingProperties.unsignedProperties_id:=$unsignedProperties_id  //xsd:ID; optional
+$XAdES.qualifyingProperties.signedProperties.id:=$signedProperties_id  //xsd:ID; optional
+
+If ($unsignedProperties#Null:C1517)
+	
+	$XAdES.qualifyingProperties.unsignedProperties:=$unsignedProperties
+	$XAdES.qualifyingProperties.unsignedProperties.id:=$unsignedProperties_id  //xsd:ID; optional
+	
+End if 
 
 /*
 

@@ -316,36 +316,42 @@ static xmlSecKeyDataFormat getFmt(PA_ObjectRef options, const wchar_t *key) {
 
 #pragma mark <dsig:Reference>
 
-static xmlSecTransformId getDigestMethod(PA_ObjectRef xmldsig, const wchar_t *key) {
+static xmlSecTransformId getDigestMethod(PA_ObjectRef options, const wchar_t *key) {
     
     CUTF8String textValue;
 
-    if(xmldsig) {
+    if(options) {
         
-        if(ob_get_s(xmldsig, key, &textValue)) {
+        CUTF8String textValue;
+        
+        PA_ObjectRef xmldsig = ob_get_o(options, L"xmldsig");
+        
+        if(xmldsig) {
+            
+            if(ob_get_s(xmldsig, key, &textValue)) {
 
-            xmlString transformId = BAD_CAST textValue.c_str();
+                xmlString transformId = BAD_CAST textValue.c_str();
 
-            if(transformId == BAD_CAST "sha224") {
-                return xmlSecTransformSha224Id;
+                if(transformId == BAD_CAST "sha224") {
+                    return xmlSecTransformSha224Id;
+                }
+                
+                if(transformId == BAD_CAST "sha256") {
+                    return xmlSecTransformSha256Id;
+                }
+                
+                if(transformId == BAD_CAST "sha384") {
+                    return xmlSecTransformSha384Id;
+                }
+                
+                if(transformId == BAD_CAST "sha512") {
+                    return xmlSecTransformSha512Id;
+                }
+                
             }
-            
-            if(transformId == BAD_CAST "sha256") {
-                return xmlSecTransformSha256Id;
-            }
-            
-            if(transformId == BAD_CAST "sha384") {
-                return xmlSecTransformSha384Id;
-            }
-            
-            if(transformId == BAD_CAST "sha512") {
-                return xmlSecTransformSha512Id;
-            }
-            
         }
-
     }
-    
+
     return xmlSecTransformSha1Id;
 }
 
@@ -580,12 +586,21 @@ static xmlNodePtr createSignNode(PA_ObjectRef options, xmlDocPtr doc) {
 
 static xmlNodePtr loadCerts(PA_ObjectRef options,
                             xmlNodePtr signNode,
+                            xmlSecTransformId digestMethod,
                             xmlSecKeyPtr key,
                             xmlSecKeyDataFormat fmt, PA_Variable Param3) {
     
     xmlNodePtr keyInfoNode = NULL;
     
+    bool with_ski = false;
+    bool with_crl = false;
+    bool with_subjectName = false;
+    bool with_keyValue = true;
+    bool with_issuerSerial = false;
+    bool with_certificate = true;
+    
     xmlString keyinfo_id;
+    xmlString keyName;
     
     if(options) {
         
@@ -593,6 +608,13 @@ static xmlNodePtr loadCerts(PA_ObjectRef options,
         
         if(xmldsig) {
          
+            with_ski = ob_get_b(xmldsig, L"ski");
+            with_crl = ob_get_b(xmldsig, L"crl");
+            with_subjectName = ob_get_b(xmldsig, L"subjectName");
+            with_keyValue = ob_get_b(xmldsig, L"keyValue");
+            with_issuerSerial = ob_get_b(xmldsig, L"issuerSerial");
+            with_certificate = ob_get_b(xmldsig, L"certificate");
+            
             CUTF8String textValue;
 
             PA_ObjectRef keyInfo = ob_get_o(xmldsig, L"keyInfo");
@@ -601,15 +623,20 @@ static xmlNodePtr loadCerts(PA_ObjectRef options,
                 if(ob_get_s(keyInfo, L"id", &textValue)) {
                     keyinfo_id = BAD_CAST textValue.c_str();
                 }
+                if(ob_get_s(keyInfo, L"keyName", &textValue)) {
+                    keyName = BAD_CAST textValue.c_str();
+                }
             }
         }
+    
     }
  
-    BOOL success = false;
-
+    xmlNodePtr x509DataNode = NULL;
+    xmlNodePtr keyValueNode = NULL;
+    
     if(PA_GetVariableKind(Param3) == eVK_ArrayBlob) {
 
-        for(PA_ulong32 i = 0; i <= PA_GetArrayNbElements(Param3); ++i) {
+        for(PA_ulong32 i = 1; i <= PA_GetArrayNbElements(Param3); ++i) {
             
             PA_Blob blob = PA_GetBlobInArray(Param3, i);
             
@@ -624,27 +651,72 @@ static xmlNodePtr loadCerts(PA_ObjectRef options,
                                                           (const xmlSecByte *)p,
                                                           (xmlSecSize)size,
                                                           fmt)) {
-                    
-                    if(!success) {
-                        keyInfoNode = xmlSecTmplSignatureEnsureKeyInfo(signNode, keyinfo_id.c_str());//crash on null Id
-                        success = true;
-                    }
 
-                    xmlNodePtr x509DataNode = xmlSecTmplKeyInfoAddX509Data(keyInfoNode);
+                        //xmlSecTmplKeyInfoAddRetrievalMethod
+                        
+                        if(!x509DataNode) {
+                            
+                            keyInfoNode = xmlSecTmplSignatureEnsureKeyInfo(signNode, keyinfo_id.c_str());//crash on null Id
+                            
+                            if(keyInfoNode) {
+                                
+                                xmlString keyinfo_uri = BAD_CAST "#";
+                                keyinfo_uri += keyinfo_id;
+                                
+                                xmlNodePtr refNode = xmlSecTmplSignatureAddReference(signNode,
+                                                                                     digestMethod,
+                                                                                     NULL,
+                                                                                     keyinfo_uri.c_str(),
+                                                                                     NULL);
+                                
+                                if(keyName.length()){
+                                    xmlSecTmplKeyInfoAddKeyName(keyInfoNode, BAD_CAST keyName.c_str());
+                                }
+                                
+                                if(!keyValueNode) {
+                                    if(with_keyValue){
+                                        keyValueNode = xmlSecTmplKeyInfoAddKeyValue(keyInfoNode);
+                                    }
+                                }
+                            }
+                                                    
+                            x509DataNode = xmlSecTmplKeyInfoAddX509Data(keyInfoNode);
+                       
+                            if(x509DataNode) {
+                                
+                                if(with_issuerSerial){
+                                    xmlNodePtr issuerSerialNode = xmlSecTmplX509DataAddIssuerSerial(x509DataNode);
+                                }
+                                
+                                if(with_ski){
+                                    xmlNodePtr skiNode = xmlSecTmplX509DataAddSKI(x509DataNode);
+                                }
+                                
+                                if(with_subjectName){
+                                    xmlNodePtr subjectName = xmlSecTmplX509DataAddSubjectName(x509DataNode);
+                                }
+                                
+                                if(with_certificate){
+                                    xmlNodePtr certificateNode = xmlSecTmplX509DataAddCertificate(x509DataNode);
+                                }
+                                
+                                if(with_crl){
+                                    xmlNodePtr crlNode = xmlSecTmplX509DataAddCRL(x509DataNode);
+                                }
+                                
+                            }
+                            
+                            continue;
+                        }
+    
                     
-                    xmlNodePtr issuerSerialNode = xmlSecTmplX509DataAddIssuerSerial(x509DataNode);
-                    xmlNodePtr certificateNode = xmlSecTmplX509DataAddCertificate(x509DataNode);
-                    xmlNodePtr skiNode = xmlSecTmplX509DataAddSKI(x509DataNode);
-                    xmlNodePtr crlNode = xmlSecTmplX509DataAddCRL(x509DataNode);
-                    xmlNodePtr subjectName = xmlSecTmplX509DataAddSubjectName(x509DataNode);
-                    
+
                     /*
                      
                      not implemented:
-                     
+
                      xmlSecTmplKeyInfoAddEncryptedKey
                      xmlSecTmplRetrievalMethodAddTransform
-                     
                      
                      */
                 }
@@ -685,10 +757,14 @@ static xmlNodePtr xadesCreateQualifyingPropertiesNode(PA_ObjectRef options,
         PA_ObjectRef xades = ob_get_o(options, L"xades");
         
         if(xades) {
-            if(ob_get_s(xades, L"qualifyingProperties_id", &textValue)) {
-                xmlString qualifyingProperties_id = BAD_CAST textValue.c_str();
-                if(qualifyingProperties_id.length()) {
-                    xmlSetProp(qualifyingPropertiesNode, BAD_CAST "Id", qualifyingProperties_id.c_str());
+            
+            PA_ObjectRef qualifyingProperties = ob_get_o(xades, L"qualifyingProperties");
+            if(qualifyingProperties) {
+                if(ob_get_s(qualifyingProperties, L"id", &textValue)) {
+                    xmlString qualifyingProperties_id = BAD_CAST textValue.c_str();
+                    if(qualifyingProperties_id.length()) {
+                        xmlSetProp(qualifyingPropertiesNode, BAD_CAST "Id", qualifyingProperties_id.c_str());
+                    }
                 }
             }
         }
@@ -713,7 +789,7 @@ static xmlNodePtr xadesCreateQualifyingPropertiesNode(PA_ObjectRef options,
     return qualifyingPropertiesNode;
 }
 
-static void getHash(C_BLOB& data, xmlString& value, xmlSecTransformId digestMethod) {
+static void getHash(void *p, PA_long32 size, xmlString& value, xmlSecTransformId digestMethod) {
     
     std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> ctx(EVP_MD_CTX_new(), EVP_MD_CTX_free);
     
@@ -741,7 +817,7 @@ static void getHash(C_BLOB& data, xmlString& value, xmlSecTransformId digestMeth
     
     if(EVP_DigestInit(ctx.get(), md()) != 0)
     {
-        if(EVP_DigestUpdate(ctx.get(), data.getBytesPtr(), data.getBytesLength()) != 0)
+        if(EVP_DigestUpdate(ctx.get(), p, size) != 0)
         {
             unsigned int len = 0;
             std::string hash;
@@ -750,7 +826,7 @@ static void getHash(C_BLOB& data, xmlString& value, xmlSecTransformId digestMeth
             {
                 hash.resize(len);
 
-                value = BAD_CAST base64_encode_uri((const unsigned char *)hash.c_str(), hash.length()).c_str();
+                value = BAD_CAST base64_encode((const unsigned char *)hash.c_str(), hash.length()).c_str();
             }
         }
     }
@@ -793,7 +869,7 @@ static void getHash(xmlString& value, xmlSecTransformId digestMethod) {
             {
                 hash.resize(len);
 
-                value = BAD_CAST base64_encode_uri((const unsigned char *)hash.c_str(), hash.length()).c_str();
+                value = BAD_CAST base64_encode((const unsigned char *)hash.c_str(), hash.length()).c_str();
             }
         }
     }
@@ -868,80 +944,113 @@ static void putXades(PA_ObjectRef options,
                      xmlNodePtr signNode,
                      xmlSecTransformId digestMethod,
                      xmlSecDSigCtxPtr pDsigCtx,
-                     xmlString& xmldsig_ns,
-                     C_BLOB& Param4) {
+                     PA_Variable Param3) {
     
+    xmlString reference_id;
+    xmlString signedProperties_id;
     xmlString unsignedProperties_id;
-    xmlString xades_ns = BAD_CAST"xades";
+    
     xmlNsPtr dsNs = NULL;
     
-    if(options) {
+    if(doc) {
         
-        CUTF8String textValue;
+        xmlString xmldsig_ns = BAD_CAST "ds";
+        xmlString xades_ns = BAD_CAST"xades";
+                
+        xmlSecKeyDataFormat crtFmt = getFmt(options, L"cert");
         
-        PA_ObjectRef xades = ob_get_o(options, L"xades");
-     
-        if(xades) {
-
-            if(ob_get_s(xades, L"ns", &textValue)) {
-                xades_ns = BAD_CAST textValue.c_str();
+        if(options) {
+            
+            CUTF8String textValue;
+            
+            PA_ObjectRef xmldsig = ob_get_o(options, L"xmldsig");
+            
+            if(xmldsig) {
+                                
+                if(ob_get_s(xmldsig, L"ns", &textValue)) {
+                    xmldsig_ns = BAD_CAST textValue.c_str();
+                }
+                
+                PA_ObjectRef ref = ob_get_o(xmldsig, L"ref");
+                
+                if(ref) {
+                    
+                    if(ob_get_s(ref, L"id", &textValue)) {
+                        reference_id = BAD_CAST textValue.c_str();
+                    }
+                                        
+                }
+                
             }
             
+            PA_ObjectRef xades = ob_get_o(options, L"xades");
+            
+            if(xades) {
+                
+                if(ob_get_s(xades, L"ns", &textValue)) {
+                    xades_ns = BAD_CAST textValue.c_str();
+                }
+                
 #pragma mark QualifyingProperties
-
-            PA_ObjectRef qualifyingProperties = ob_get_o(xades, L"qualifyingProperties");
-            if(qualifyingProperties) {
-                xmlNodePtr rootNode = xmlDocGetRootElement(doc);
-                xmlNodePtr qualifyingPropertiesNode = xadesCreateQualifyingPropertiesNode(options,
-                                                                                          doc,
-                                                                                          signNode,
-                                                                                          xmldsig_ns,
-                                                                                          xades_ns);
-                if(qualifyingPropertiesNode) {
-                    
-                    xmlNsPtr dsNs = xmlNewNs(qualifyingPropertiesNode,
-                                             BAD_CAST "http://www.w3.org/2000/09/xmldsig#",
-                                             xmldsig_ns.c_str());
-                    xmlSetNs(qualifyingPropertiesNode, dsNs);
-                    
-                    xmlNsPtr xadesNs = xmlNewNs(qualifyingPropertiesNode,
-                                                BAD_CAST "http://uri.etsi.org/01903/v1.3.2#",
-                                                xades_ns.c_str());
-                    xmlSetNs(qualifyingPropertiesNode, xadesNs);
-                    
+                
+                PA_ObjectRef qualifyingProperties = ob_get_o(xades, L"qualifyingProperties");
+                if(qualifyingProperties) {
+                    xmlNodePtr rootNode = xmlDocGetRootElement(doc);
+                    xmlNodePtr qualifyingPropertiesNode = xadesCreateQualifyingPropertiesNode(options,
+                                                                                              doc,
+                                                                                              signNode,
+                                                                                              xmldsig_ns,
+                                                                                              xades_ns);
+                    if(qualifyingPropertiesNode) {
+                        
+                        xmlNsPtr dsNs = xmlNewNs(qualifyingPropertiesNode,
+                                                 BAD_CAST "http://www.w3.org/2000/09/xmldsig#",
+                                                 xmldsig_ns.c_str());
+                        xmlSetNs(qualifyingPropertiesNode, dsNs);
+                        
+                        xmlNsPtr xadesNs = xmlNewNs(qualifyingPropertiesNode,
+                                                    BAD_CAST "http://uri.etsi.org/01903/v1.3.2#",
+                                                    xades_ns.c_str());
+                        xmlSetNs(qualifyingPropertiesNode, xadesNs);
+                        
 #pragma mark SignedProperties
-                    
-                    xmlNodePtr signedPropertiesNode = xmlNewNode(xadesNs, BAD_CAST "SignedProperties");
-
-                    if(signedPropertiesNode) {
-                        xmlAddChild(qualifyingPropertiesNode, signedPropertiesNode);
-                        if(ob_get_s(qualifyingProperties, L"signedProperties_id", &textValue)) {
-                            xmlString signedProperties_id = BAD_CAST textValue.c_str();
+                        
+                        xmlNodePtr signedPropertiesNode = xmlNewNode(xadesNs, BAD_CAST "SignedProperties");
+                        
+                        if(signedPropertiesNode) {
+                            xmlAddChild(qualifyingPropertiesNode, signedPropertiesNode);
+                            PA_ObjectRef signedProperties = ob_get_o(qualifyingProperties, L"signedProperties");
+                            if(signedProperties) {
+                                if(ob_get_s(signedProperties, L"id", &textValue)) {
+                                    signedProperties_id = BAD_CAST textValue.c_str();
+                                }
+                            }
+                            
                             if(signedProperties_id.length()) {
                                 xmlSetProp(signedPropertiesNode, BAD_CAST "Id", signedProperties_id.c_str());
                                 xmlString signedProperties_uri = BAD_CAST "#";
-                                                                signedProperties_uri += signedProperties_id;
-                                                                xmlNodePtr refNode = xmlSecTmplSignatureAddReference(signNode,
-                                                                                                                     digestMethod,
-                                                                                                                     NULL,
-                                                                                                                     signedProperties_uri.c_str(),
-                                                                                                                     NULL);
+                                signedProperties_uri += signedProperties_id;
+                                xmlNodePtr refNode = xmlSecTmplSignatureAddReference(signNode,
+                                                                                     digestMethod,
+                                                                                     NULL,
+                                                                                     signedProperties_uri.c_str(),
+                                                                                     BAD_CAST "http://uri.etsi.org/01903#SignedProperties");
                             }
                         }
-                    
+                                                
 #pragma mark SignedProperties > SignedSignatureProperties
-                        
-                        xmlNodePtr signedSignaturePropertiesNode = xmlNewNode(xadesNs, BAD_CAST "SignedSignatureProperties");
-                        
+                            
+                            xmlNodePtr signedSignaturePropertiesNode = xmlNewNode(xadesNs, BAD_CAST "SignedSignatureProperties");
+                            
                         if(signedSignaturePropertiesNode) {
                             xmlAddChild(signedPropertiesNode, signedSignaturePropertiesNode);
                             PA_ObjectRef signedProperties = ob_get_o(qualifyingProperties, L"signedProperties");
                             if(signedProperties) {
                                 PA_ObjectRef signedSignatureProperties = ob_get_o(signedProperties, L"signedSignatureProperties");
                                 if(signedSignatureProperties) {
-                                                                        
-#pragma mark SignedProperties > SigningTime
-                                        
+                                    
+#pragma mark SignedProperties > SignedSignatureProperties > SigningTime
+                                    
                                     if(ob_get_s(signedSignatureProperties, L"signingTime", &textValue)) {
                                         xmlString signingTime = BAD_CAST textValue.c_str();
                                         if(signingTime.length()) {
@@ -950,103 +1059,192 @@ static void putXades(PA_ObjectRef options,
                                             xmlNodeSetContent(signingTimeNode, signingTime.c_str());
                                         }
                                     }
-
-#pragma mark SignedProperties > SigningCertificate
                                     
-                                    //use BLOB
-                                    
-                                    if(Param4.getBytesLength()) {
-                                        
-                                        xmlNodePtr signingCertificateNode = xmlNewNode(xadesNs, BAD_CAST "SigningCertificate");
-                                        xmlAddChild(signedSignaturePropertiesNode, signingCertificateNode);
-                                        xmlNodePtr certNode = xmlNewNode(xadesNs, BAD_CAST "Cert");
-                                        xmlAddChild(signingCertificateNode, certNode);
-                                        xmlNodePtr certDigestNode = xmlNewNode(xadesNs, BAD_CAST "CertDigest");
-                                        xmlAddChild(certNode, certDigestNode);
-                                        xmlNodePtr issuerSerialNode = xmlNewNode(xadesNs, BAD_CAST "IssuerSerial");
-                                        xmlAddChild(certNode, issuerSerialNode);
-                                        
-                                        xmlString hash;
-                                        
-                                        getHash(Param4, hash, digestMethod);
+#pragma mark SignedProperties > SignedSignatureProperties > SigningCertificate
+                                                                        
+                                    if(PA_GetVariableKind(Param3) == eVK_ArrayBlob) {
+                                        xmlNodePtr signingCertificateNode = NULL;
+                                        if(PA_GetArrayNbElements(Param3)){
+                                            signingCertificateNode = xmlNewNode(xadesNs, BAD_CAST "SigningCertificate");
+                                            xmlAddChild(signedSignaturePropertiesNode, signingCertificateNode);
+                                        }
+                                        if(signingCertificateNode){
+                                            for(PA_ulong32 i = 1; i <= PA_GetArrayNbElements(Param3); ++i) {
+                                                                                            
+                                                PA_Blob blob = PA_GetBlobInArray(Param3, i);
+                                                
+                                                PA_Handle h = blob.fHandle;
+                                                
+                                                if(h) {
+                                                    
+                                                    void *p = (void *)PA_LockHandle(h);
+                                                    PA_long32 size = PA_GetHandleSize(h);
+                                                    xmlNodePtr certNode = xmlNewNode(xadesNs, BAD_CAST "Cert");
+                                                    xmlAddChild(signingCertificateNode, certNode);
+                                                    xmlNodePtr certDigestNode = xmlNewNode(xadesNs, BAD_CAST "CertDigest");
+                                                    xmlAddChild(certNode, certDigestNode);
+                                                    xmlNodePtr issuerSerialNode = xmlNewNode(xadesNs, BAD_CAST "IssuerSerial");
+                                                    xmlAddChild(certNode, issuerSerialNode);
+                                                    
+                                                    BIO *bio = BIO_new_mem_buf(p, size);
+                                                    X509 *cert = NULL;
+                                                    
+                                                    if(bio) {
+                                                        
+                                                        switch (crtFmt) {
+                                                            case xmlSecKeyDataFormatPem:
+                                                            case xmlSecKeyDataFormatCertPem:
+                                                            case xmlSecKeyDataFormatPkcs8Pem:
+                                                                cert = PEM_read_bio_X509(bio, NULL, 0, NULL);
+                                                                break;
+                                                            default:
+                                                                cert = d2i_X509_bio(bio, NULL);
+                                                                break;
+                                                        }
 
-                                        xmlNodePtr digestMethodNode = xmlNewNode(dsNs, BAD_CAST "DigestMethod");
-                                        xmlNodePtr digestValueNode = xmlNewNode(dsNs, BAD_CAST "DigestValue");
-                                        xmlAddChild(certDigestNode, digestMethodNode);
-                                        xmlAddChild(certDigestNode, digestValueNode);
-                                        xmlSetProp(digestMethodNode, BAD_CAST "Algorithm", digestMethod->name);
-                                        xmlNodeSetContent(digestValueNode, BAD_CAST hash.c_str());
+                                                        if(cert){
+                                                                                                                    
+                                                            X509_NAME *_name = X509_get_issuer_name(cert);
+                                                            if(_name){
+                                                                BIO *mem = BIO_new(BIO_s_mem());
+                                                                if(mem){
+                                                                    if (X509_NAME_print_ex(mem, _name, 0, XN_FLAG_RFC2253) > 0) {
+                                                                        (void)BIO_flush(mem);
+                                                                        long size = BIO_pending(mem);
+                                                                        xmlChar *res = (xmlChar *)xmlMalloc(size + 1);
+                                                                        if(res){
+                                                                            size = BIO_read(mem, res, size);
+                                                                            res[size] = '\0';
+                                                                            xmlNodePtr issuerNameNode = xmlNewNode(dsNs, BAD_CAST "X509IssuerName");
+                                                                            xmlAddChild(issuerSerialNode, issuerNameNode);
+                                                                            xmlNodeSetContent(issuerNameNode, BAD_CAST res);
+                                                                        }
+                                                                    }
+                                                                    BIO_free_all(mem);
+                                                                }
+                                                            }
+                                                            ASN1_INTEGER *asni = X509_get_serialNumber(cert);
+                                                            BIGNUM *bn = ASN1_INTEGER_to_BN(asni, NULL);
+                                                            if(bn){
+                                                                char *p = BN_bn2dec(bn);
+                                                                xmlChar *res = xmlCharStrdup(p);
+                                                                xmlNodePtr serialNumberNode = xmlNewNode(dsNs, BAD_CAST "X509SerialNumber");
+                                                                xmlAddChild(issuerSerialNode, serialNumberNode);
+                                                                xmlNodeSetContent(serialNumberNode, BAD_CAST res);
+                                                                BN_free(bn);
+                                                            }
+                                                            X509_free(cert);
+                                                        }
+                                                        BIO_free(bio);
+                                                    }
+
+                                                    xmlString hash;
+                                                    
+                                                    getHash(p, size, hash, digestMethod);
+                                                    
+                                                    xmlNodePtr digestMethodNode = xmlNewNode(dsNs, BAD_CAST "DigestMethod");
+                                                    xmlNodePtr digestValueNode = xmlNewNode(dsNs, BAD_CAST "DigestValue");
+                                                    xmlAddChild(certDigestNode, digestMethodNode);
+                                                    xmlAddChild(certDigestNode, digestValueNode);
+                                                    xmlSetProp(digestMethodNode, BAD_CAST "Algorithm", digestMethod->name);
+                                                    xmlNodeSetContent(digestValueNode, BAD_CAST hash.c_str());
+                                                    
+                                                    PA_UnlockHandle(h);
+                                                }
+                                            }
+                                        }
                                     }
                                     
-                                    if(0) {
-                                        PA_ObjectRef signingCertificate = ob_get_o(signedSignatureProperties, L"signingCertificate");
-                                        if(signingCertificate) {
-                                            xmlNodePtr signingCertificateNode = xmlNewNode(xadesNs, BAD_CAST "SigningCertificate");
-                                            xmlAddChild(signedSignaturePropertiesNode, signingCertificateNode);
-                                            PA_CollectionRef cert = ob_get_c(signingCertificate, L"cert");
-                                            if(cert) {
-                                                for(PA_ulong32 i = 0; i < PA_GetCollectionLength(cert); ++i) {
-                                                    PA_Variable v = PA_GetCollectionElement(cert, i);
-                                                    if(PA_GetVariableKind(v) == eVK_Object) {
-                                                        PA_ObjectRef o = PA_GetObjectVariable(v);
-                                                        if(o) {
-                                                            xmlNodePtr certNode = xmlNewNode(xadesNs, BAD_CAST "Cert");
-                                                            xmlAddChild(signingCertificateNode, certNode);
-                                                            xmlNodePtr certDigestNode = xmlNewNode(xadesNs, BAD_CAST "CertDigest");
-                                                            xmlAddChild(certNode, certDigestNode);
-                                                            xmlNodePtr issuerSerialNode = xmlNewNode(xadesNs, BAD_CAST "IssuerSerial");
-                                                            xmlAddChild(certNode, issuerSerialNode);
-                                                            PA_ObjectRef issuerSerial = ob_get_o(o, L"issuerSerial");
-                                                            if(issuerSerial) {
-                                                                if(ob_get_s(issuerSerial, L"X509IssuerName", &textValue)){
-                                                                    if(textValue.length()) {
-                                                                        xmlString X509IssuerName = BAD_CAST textValue.c_str();
-                                                                        xmlSecTmplX509IssuerSerialAddIssuerName(issuerSerialNode, X509IssuerName.c_str());
-                                                                    }
+#pragma mark SignedProperties > SignedSignatureProperties > SignaturePolicyIdentifer
+                                    
+                                    bool signaturePolicyImplied = true;
+                                    
+                                    PA_ObjectRef signaturePolicyIdentifer = ob_get_o(signedSignatureProperties, L"signaturePolicyIdentifer");
+                                    PA_CollectionRef signaturePolicyId = NULL;
+                                    if(signaturePolicyIdentifer) {
+                                        signaturePolicyId = ob_get_c(signaturePolicyIdentifer, L"signaturePolicyId");
+                                        if(signaturePolicyId) {
+                                            if(PA_GetCollectionLength(signaturePolicyId)){
+                                                signaturePolicyImplied = false;
+                                            }
+                                        }
+                                    }
+                                
+                                    if(signaturePolicyImplied){
+                                        xmlNodePtr signaturePolicyIdentifierNode = xmlNewNode(xadesNs, BAD_CAST "SignaturePolicyIdentifier");
+                                        xmlAddChild(signedSignaturePropertiesNode, signaturePolicyIdentifierNode);
+                                        xmlNodePtr signaturePolicyImpliedNode = xmlNewNode(xadesNs, BAD_CAST "SignaturePolicyImplied");
+                                        xmlAddChild(signaturePolicyIdentifierNode, signaturePolicyImpliedNode);
+                                    }else{
+                                        for(PA_ulong32 i = 0; i < PA_GetCollectionLength(signaturePolicyId); ++i) {
+                                            PA_Variable v = PA_GetCollectionElement(signaturePolicyId, i);
+                                            if(PA_GetVariableKind(v) == eVK_Object) {
+                                                PA_ObjectRef o = PA_GetObjectVariable(v);
+                                                if(o) {
+                                                    PA_ObjectRef sigPolicyId = ob_get_o(o, L"sigPolicyId");
+                                                    if(sigPolicyId){
+                                                        if(ob_get_s(sigPolicyId, L"identifier", &textValue)) {
+                                                            if(textValue.length()) {
+                                                                xmlString identifier = BAD_CAST textValue.c_str();
+                                                                xmlNodePtr signaturePolicyIdentifierNode = xmlNewNode(xadesNs, BAD_CAST "SignaturePolicyIdentifier");
+                                                                xmlAddChild(signedSignaturePropertiesNode, signaturePolicyIdentifierNode);
+                                                                xmlNodePtr signaturePolicyIdNode = xmlNewNode(xadesNs, BAD_CAST "SignaturePolicyId");
+                                                                xmlAddChild(signaturePolicyIdentifierNode, signaturePolicyIdNode);
+                                                                
+                                                                xmlNodePtr sigPolicyIdNode = xmlNewNode(xadesNs, BAD_CAST "SigPolicyId");
+                                                                xmlAddChild(signaturePolicyIdNode, sigPolicyIdNode);
+                                                                xmlNodePtr identifierNode = xmlNewNode(xadesNs, BAD_CAST "Identifier");
+                                                                xmlAddChild(sigPolicyIdNode, identifierNode);
+                                                                xmlNodeSetContent(identifierNode, identifier.c_str());
+                                                                
+                                                                xmlNodePtr descriptionNode = xmlNewNode(xadesNs, BAD_CAST "Description");
+                                                                xmlAddChild(sigPolicyIdNode, descriptionNode);
+                                                                
+//                                                                xmlNodePtr documentationReferencesNode = xmlNewNode(xadesNs, BAD_CAST "DocumentationReferences");
+//                                                                xmlAddChild(sigPolicyIdNode, documentationReferencesNode);
+//                                                                xmlNodePtr documentationReferenceNode = xmlNewNode(xadesNs, BAD_CAST "DocumentationReference");
+//                                                                xmlAddChild(documentationReferencesNode, documentationReferenceNode);
+                                                                
+                                                                PA_Blob blob = PA_GetBlobInArray(Param3, 0);
+                                                                
+                                                                PA_Handle hh = blob.fHandle;
+                                                                
+                                                                if(hh) {
+                                                                    
+                                                                    xmlNodePtr sigPolicyHashNode = xmlNewNode(xadesNs, BAD_CAST "SigPolicyHash");
+                                                                    
+                                                                    xmlAddChild(signaturePolicyIdNode, sigPolicyHashNode);
+                                                                    
+                                                                    void *pp = (void *)PA_LockHandle(hh);
+                                                                    PA_long32 size = PA_GetHandleSize(hh);
+                                                                    
+                                                                    xmlString hash;
+                                                                    
+                                                                    
+                                                                    getHash(pp, size, hash, digestMethod);
+                                                                    
+                                                                    xmlNodePtr digestMethodNode = xmlNewNode(dsNs, BAD_CAST "DigestMethod");
+                                                                    xmlNodePtr digestValueNode = xmlNewNode(dsNs, BAD_CAST "DigestValue");
+                                                                    xmlAddChild(sigPolicyHashNode, digestMethodNode);
+                                                                    xmlAddChild(sigPolicyHashNode, digestValueNode);
+                                                                    xmlSetProp(digestMethodNode, BAD_CAST "Algorithm", digestMethod->name);
+                                                                    xmlNodeSetContent(digestValueNode, BAD_CAST hash.c_str());
+                                                                    
+                                                                    PA_UnlockHandle(hh);
                                                                 }
-                                                                if(ob_get_s(issuerSerial, L"X509SerialNumber", &textValue)){
-                                                                    if(textValue.length()) {
-                                                                        xmlString X509SerialNumber = BAD_CAST textValue.c_str();
-                                                                        xmlSecTmplX509IssuerSerialAddSerialNumber(issuerSerialNode, X509SerialNumber.c_str());
-                                                                    }
-                                                                }
-                                                                      
-                                                                xmlString hash;
-                                                                
-                                                                /*
-                                                                c14n_node_xpath(doc, certNode, BAD_CAST "descendant-or-self::node()",
-                                                                                digestMethod, hash);
-                                                                */
-                                                                
-                                                                getHash(Param4, hash, digestMethod);
-                                                                
-                                                                xmlNodePtr digestMethodNode = xmlNewNode(dsNs, BAD_CAST "DigestMethod");
-                                                                xmlNodePtr digestValueNode = xmlNewNode(dsNs, BAD_CAST "DigestValue");
-                                                                xmlAddChild(certDigestNode, digestMethodNode);
-                                                                xmlAddChild(certDigestNode, digestValueNode);
-                                                                xmlSetProp(digestMethodNode, BAD_CAST "Algorithm", digestMethod->name);
-                                                                xmlNodeSetContent(digestValueNode, BAD_CAST hash.c_str());
                                                             }
                                                         }
                                                     }
                                                 }
                                             }
                                         }
-                                    }
-   
-#pragma mark SignedProperties > SignaturePolicyIdentifer
-                                    
-                                    PA_ObjectRef signaturePolicyIdentifer = ob_get_o(signedSignatureProperties, L"signaturePolicyIdentifer");
-                                    if(signaturePolicyIdentifer) {
-                                        PA_CollectionRef signaturePolicyId = ob_get_c(signaturePolicyIdentifer, L"signaturePolicyId");
-                                        if(signaturePolicyId) {
-                                            
-                                        }
-                                    }
 
-#pragma mark SignedProperties > SignatureProductionPlace
+                                    }
                                     
-#pragma mark SignedProperties > SignerRole
+                              
+#pragma mark SignedProperties > SignedSignatureProperties > SignatureProductionPlace
+                                    
+#pragma mark SignedProperties > SignedSignatureProperties > SignerRole
                                     
                                     PA_ObjectRef signerRole = ob_get_o(signedSignatureProperties, L"signerRole");
                                     if(signerRole) {
@@ -1054,19 +1252,21 @@ static void putXades(PA_ObjectRef options,
                                         xmlAddChild(signedSignaturePropertiesNode, signerRoleNode);
                                         PA_CollectionRef claimedRoles = ob_get_c(signerRole, L"claimedRoles");
                                         if(claimedRoles) {
-                                            xmlNodePtr claimedRolesNode = xmlNewNode(xadesNs, BAD_CAST "ClaimedRoles");
-                                            xmlAddChild(signerRoleNode, claimedRolesNode);
-                                            for(PA_ulong32 i = 0; i < PA_GetCollectionLength(claimedRoles); ++i) {
-                                                PA_Variable v = PA_GetCollectionElement(claimedRoles, i);
-                                                if(PA_GetVariableKind(v) == eVK_Object) {
-                                                    PA_ObjectRef o = PA_GetObjectVariable(v);
-                                                    if(o) {
-                                                        xmlNodePtr claimedRoleNode = xmlNewNode(xadesNs, BAD_CAST "ClaimedRole");
-                                                        xmlAddChild(claimedRolesNode, claimedRoleNode);
-                                                        if(ob_get_s(o, L"claimedRole", &textValue)) {
-                                                            if(textValue.length()) {
-                                                                xmlString claimedRole = BAD_CAST textValue.c_str();
-                                                                xmlNodeSetContent(claimedRoleNode, claimedRole.c_str());
+                                            if(PA_GetCollectionLength(claimedRoles)) {
+                                                xmlNodePtr claimedRolesNode = xmlNewNode(xadesNs, BAD_CAST "ClaimedRoles");
+                                                xmlAddChild(signerRoleNode, claimedRolesNode);
+                                                for(PA_ulong32 i = 0; i < PA_GetCollectionLength(claimedRoles); ++i) {
+                                                    PA_Variable v = PA_GetCollectionElement(claimedRoles, i);
+                                                    if(PA_GetVariableKind(v) == eVK_Object) {
+                                                        PA_ObjectRef o = PA_GetObjectVariable(v);
+                                                        if(o) {
+                                                            xmlNodePtr claimedRoleNode = xmlNewNode(xadesNs, BAD_CAST "ClaimedRole");
+                                                            xmlAddChild(claimedRolesNode, claimedRoleNode);
+                                                            if(ob_get_s(o, L"claimedRole", &textValue)) {
+                                                                if(textValue.length()) {
+                                                                    xmlString claimedRole = BAD_CAST textValue.c_str();
+                                                                    xmlNodeSetContent(claimedRoleNode, claimedRole.c_str());
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -1075,19 +1275,21 @@ static void putXades(PA_ObjectRef options,
                                         }
                                         PA_CollectionRef certifiedRoles = ob_get_c(signerRole, L"certifiedRoles");
                                         if(certifiedRoles) {
-                                            xmlNodePtr certifiedRolesNode = xmlNewNode(xadesNs, BAD_CAST "CertifiedRoles");
-                                            xmlAddChild(signerRoleNode, certifiedRolesNode);
-                                            for(PA_ulong32 i = 0; i < PA_GetCollectionLength(certifiedRoles); ++i) {
-                                                PA_Variable v = PA_GetCollectionElement(certifiedRoles, i);
-                                                if(PA_GetVariableKind(v) == eVK_Object) {
-                                                    PA_ObjectRef o = PA_GetObjectVariable(v);
-                                                    if(o) {
-                                                        xmlNodePtr certifiedRoleNode = xmlNewNode(xadesNs, BAD_CAST "CertifiedRole");
-                                                        xmlAddChild(certifiedRolesNode, certifiedRoleNode);
-                                                        if(ob_get_s(o, L"certifiedRole", &textValue)) {
-                                                            if(textValue.length()) {
-                                                                xmlString certifiedRole = BAD_CAST textValue.c_str();
-                                                                xmlNodeSetContent(certifiedRoleNode, certifiedRole.c_str());
+                                            if(PA_GetCollectionLength(certifiedRoles)) {
+                                                xmlNodePtr certifiedRolesNode = xmlNewNode(xadesNs, BAD_CAST "CertifiedRoles");
+                                                xmlAddChild(signerRoleNode, certifiedRolesNode);
+                                                for(PA_ulong32 i = 0; i < PA_GetCollectionLength(certifiedRoles); ++i) {
+                                                    PA_Variable v = PA_GetCollectionElement(certifiedRoles, i);
+                                                    if(PA_GetVariableKind(v) == eVK_Object) {
+                                                        PA_ObjectRef o = PA_GetObjectVariable(v);
+                                                        if(o) {
+                                                            xmlNodePtr certifiedRoleNode = xmlNewNode(xadesNs, BAD_CAST "CertifiedRole");
+                                                            xmlAddChild(certifiedRolesNode, certifiedRoleNode);
+                                                            if(ob_get_s(o, L"certifiedRole", &textValue)) {
+                                                                if(textValue.length()) {
+                                                                    xmlString certifiedRole = BAD_CAST textValue.c_str();
+                                                                    xmlNodeSetContent(certifiedRoleNode, certifiedRole.c_str());
+                                                                }
                                                             }
                                                         }
                                                     }
@@ -1097,10 +1299,9 @@ static void putXades(PA_ObjectRef options,
                                     }
                                 }
                             }
-                        
- 
-#pragma mark SignedDataObjectProperties
-              
+                            
+#pragma mark SignedProperties > SignedDataObjectProperties
+                            
                             PA_ObjectRef signedDataObjectProperties = ob_get_o(signedProperties, L"signedDataObjectProperties");
                             if(signedDataObjectProperties) {
                                 xmlNodePtr signedDataObjectPropertiesNode = xmlNewNode(xadesNs, BAD_CAST "SignedDataObjectProperties");
@@ -1112,27 +1313,35 @@ static void putXades(PA_ObjectRef options,
                                         if(PA_GetVariableKind(v) == eVK_Object) {
                                             PA_ObjectRef o = PA_GetObjectVariable(v);
                                             if(o) {
-                                               
-#pragma mark SignedDataObjectProperties > DataObjectFormat
+                                                
+#pragma mark SignedProperties > SignedDataObjectProperties > DataObjectFormat
                                                 
                                                 xmlNodePtr dataObjectFormatNode = xmlNewNode(xadesNs, BAD_CAST "DataObjectFormat");
                                                 xmlAddChild(signedDataObjectPropertiesNode, dataObjectFormatNode);
-                                                if(ob_get_s(o, L"reference_id", &textValue)) {
+                                                
+                                                if(ob_get_s(o, L"id", &textValue)) {
                                                     if(textValue.length()) {
-                                                        xmlString reference_id = BAD_CAST textValue.c_str();
-                                                        xmlString objectReference = BAD_CAST "#";
-                                                        objectReference += reference_id;
-                                                        xmlSetProp(dataObjectFormatNode, BAD_CAST "ObjectReference", objectReference.c_str());
-                                                        
+                                                        reference_id = BAD_CAST textValue.c_str();
+                                                    }
+                                                }
+                                                
+                                                if(reference_id.length()) {
+                                                    
+                                                    xmlString objectReference = BAD_CAST "#";
+                                                    objectReference += reference_id;
+                                                    xmlSetProp(dataObjectFormatNode, BAD_CAST "ObjectReference", objectReference.c_str());
+                                                    
+                                                    if(i){
                                                         xmlNodePtr refNode = xmlSecTmplSignatureAddReference(signNode,
                                                                                                              digestMethod,
                                                                                                              reference_id.c_str(),
                                                                                                              BAD_CAST "",
                                                                                                              BAD_CAST "http://www.w3.org/2000/09/xmldsig#Object");
                                                     }
+
                                                 }
                                                 
-#pragma mark SignedDataObjectProperties > DataObjectFormat > Description
+#pragma mark SignedProperties > SignedDataObjectProperties > DataObjectFormat > Description
                                                 
                                                 if(ob_get_s(o, L"description", &textValue)) {
                                                     xmlNodePtr descriptionNode = xmlNewNode(xadesNs, BAD_CAST "Description");
@@ -1142,8 +1351,8 @@ static void putXades(PA_ObjectRef options,
                                                         xmlNodeSetContent(descriptionNode, description.c_str());
                                                     }
                                                 }
-
-#pragma mark SignedDataObjectProperties > DataObjectFormat > ObjectIdentifierType
+                                                
+#pragma mark SignedProperties > SignedDataObjectProperties > DataObjectFormat > ObjectIdentifierType
                                                 
                                                 PA_ObjectRef objectIdentifier = ob_get_o(o, L"objectIdentifier");
                                                 if(objectIdentifier) {
@@ -1173,7 +1382,7 @@ static void putXades(PA_ObjectRef options,
                                                 
                                                 //DocumentationReferences
                                                 
-#pragma mark SignedDataObjectProperties > DataObjectFormat > MimeType
+#pragma mark SignedProperties > SignedDataObjectProperties > DataObjectFormat > MimeType
                                                 
                                                 if(ob_get_s(o, L"mimeType", &textValue)) {
                                                     xmlNodePtr mimeTypeNode = xmlNewNode(xadesNs, BAD_CAST "MimeType");
@@ -1183,8 +1392,8 @@ static void putXades(PA_ObjectRef options,
                                                         xmlNodeSetContent(mimeTypeNode, mimeType.c_str());
                                                     }
                                                 }
-
-#pragma mark SignedDataObjectProperties > DataObjectFormat > Encoding
+                                                
+#pragma mark SignedProperties > SignedDataObjectProperties > DataObjectFormat > Encoding
                                                 
                                                 if(ob_get_s(o, L"encoding", &textValue)) {
                                                     xmlNodePtr encodingNode = xmlNewNode(xadesNs, BAD_CAST "Encoding");
@@ -1200,15 +1409,39 @@ static void putXades(PA_ObjectRef options,
                                 }
                             }
                         }
+                    
+#pragma mark UnsignedProperties
+   
+                        PA_ObjectRef unsignedSignatureProperties = ob_get_o(qualifyingProperties, L"unsignedSignatureProperties");
+                        if(unsignedSignatureProperties) {
+                            if(ob_get_s(unsignedSignatureProperties, L"id", &textValue)) {
+                                unsignedProperties_id = BAD_CAST textValue.c_str();
+                            }
+                            xmlNodePtr unsignedSignaturePropertiesNode = xmlNewNode(xadesNs, BAD_CAST "UnsignedProperties");
+                            if(unsignedSignaturePropertiesNode) {
+                                xmlAddChild(qualifyingPropertiesNode, unsignedSignaturePropertiesNode);
+                                if(unsignedProperties_id.length()) {
+                                    xmlSetProp(unsignedSignaturePropertiesNode, BAD_CAST "Id", unsignedProperties_id.c_str());
+                                    xmlString unsignedProperties_uri = BAD_CAST "#";
+                                    unsignedProperties_uri += signedProperties_id;
+                                    xmlNodePtr refNode = xmlSecTmplSignatureAddReference(signNode,
+                                                                                         digestMethod,
+                                                                                         NULL,
+                                                                                         unsignedProperties_uri.c_str(),
+                                                                                         NULL);
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
+
 #pragma mark -
 
-static xmlSecDSigCtxPtr createSignatureContext(PA_ObjectRef options,
+static xmlSecDSigCtxPtr createSignatureContextForVerify(PA_ObjectRef options,
                                                xmlSecKeysMngrPtr keysMngr) {
     
     xmlSecDSigCtxPtr pDsigCtx = NULL;
@@ -1327,7 +1560,6 @@ static xmlSecDSigCtxPtr createSignatureContext(PA_ObjectRef options,
     return pDsigCtx;
 }
 
-
 static xmlSecDSigCtxPtr createSignatureContextForSign(PA_ObjectRef options,
                                                       xmlSecKeysMngrPtr keysMngr) {
 
@@ -1387,6 +1619,8 @@ static xmlSecDSigCtxPtr createSignatureContextForSign(PA_ObjectRef options,
     
     return pDsigCtx;
 }
+
+#pragma mark -
 
 static void doIt(PA_PluginParameters params,
                  xmlsec_command_t command,
@@ -1457,10 +1691,8 @@ static void doIt(PA_PluginParameters params,
                                     if(refNode) {
                                         
                                         if(xmlSecTmplReferenceAddTransform(refNode, xmlSecTransformEnvelopedId)) {
-                                            
-//                                            xmlNodePtr keyInfoNode = putKeyInfo(signNode, digestMethod, options, Param3);
-      
-//                                            putXades(options, doc, signNode, digestMethod, pDsigCtx, xmldsig_ns, Param4);
+                                                  
+                                            putXades(options, doc, signNode, digestMethod, pDsigCtx, Param3);
                                             
                                         }else{
                                             ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplReferenceAddTransform");
@@ -1504,7 +1736,7 @@ static void doIt(PA_PluginParameters params,
                                             ob_set_s(status, L"error", (const char *)"failed:xmlSecCryptoAppKeyLoadMemory");
                                         }
 
-                                        loadCerts(options, signNode, secKey, crtFmt, Param3);
+                                        loadCerts(options, signNode, digestMethod, secKey, crtFmt, Param3);
                                            
                                     }
 
@@ -1590,7 +1822,7 @@ void xmlsec_decrypt(PA_PluginParameters params) {
 
 #pragma mark base64
 
-static int Base64decode_len(const char *bufcoded) {
+static int base64_decode_len(const char *bufcoded) {
     
     int nbytesdecoded;
     const unsigned char *bufin;
@@ -1605,11 +1837,11 @@ static int Base64decode_len(const char *bufcoded) {
     return nbytesdecoded + 1;
 }
 
-static int Base64encode_len(int len) {
+static int base64_encode_len(int len) {
     return ((len + 2) / 3 * 4) + 1;
 }
 
-static void Base64decode(std::vector<unsigned char>& decoded, const char *bufcoded) {
+static void base64_decode(std::vector<unsigned char>& decoded, const char *bufcoded) {
     
     const unsigned char *bufin;
     unsigned char *bufout;
@@ -1641,10 +1873,10 @@ static void Base64decode(std::vector<unsigned char>& decoded, const char *bufcod
     decoded.resize(bufout - bufplain);
 }
 
-static void Base64encode(char *encoded, const char *string, int len) {
+static void base64_encode(char *encoded, const char *string, int len) {
     int i;
     char *p = encoded;
-
+    
     for (i = 0; i < len - 2; i += 3) {
         *p++ = basis_64[(string[i] >> 2) & 0x3F];
         *p++ = basis_64[((string[i] & 0x3) << 4) | ((int) (string[i + 1] & 0xF0) >> 4)];
@@ -1656,27 +1888,42 @@ static void Base64encode(char *encoded, const char *string, int len) {
         *p++ = basis_64[(string[i] >> 2) & 0x3F];
         if (i == (len - 1)) {
             *p++ = basis_64[((string[i] & 0x3) << 4)];
+//            *p++ = '=';
+//            *p++ = '=';
         } else {
             *p++ = basis_64[((string[i] & 0x3) << 4) | ((int) (string[i + 1] & 0xF0) >> 4)];
             *p++ = basis_64[((string[i + 1] & 0xF) << 2)];
+//            *p++ = '=';
         }
     }
-
+    
     *p++ = '\0';
 }
 
 static std::string base64_encode_uri(const unsigned char *ptr, size_t size) {
         
-    std::vector<char> encoded(Base64encode_len((int)size));
+    std::vector<char> encoded(base64_encode_len((int)size));
     
-    Base64encode((char *)&encoded[0], (const char *)ptr, (int)size);
+    base64_encode((char *)&encoded[0], (const char *)ptr, (int)size);
     
     return std::string((char *)&encoded[0]);
 }
 
+static std::string base64_encode(const unsigned char *ptr, size_t size) {
+        
+    C_BLOB x;
+    x.setBytes((const uint8_t *)ptr, size);
+    C_TEXT t;
+    x.toB64Text(&t, false);
+    CUTF8String u8;
+    t.copyUTF8String(&u8);
+    
+    return std::string((char *)u8.c_str());
+}
+
 static void base64_decode_uri(std::vector<unsigned char>& decoded, std::string encoded) {
     
-    decoded.resize(Base64decode_len((const char *)encoded.c_str()));
+    decoded.resize(base64_decode_len((const char *)encoded.c_str()));
     
-    Base64decode(decoded, (const char *)encoded.c_str());
+    base64_decode(decoded, (const char *)encoded.c_str());
 }

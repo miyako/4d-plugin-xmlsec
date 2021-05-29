@@ -1,23 +1,16 @@
 ﻿[
 	{
-		"line": 21,
+		"line": 47,
 		"method": {
 			"type": 1,
-			"methodName": "sign1"
+			"methodName": "xmldsig_sign_6"
 		}
 	},
 	{
-		"line": 61,
+		"line": 49,
 		"method": {
 			"type": 1,
-			"methodName": "sign2"
-		}
-	},
-	{
-		"line": 20,
-		"method": {
-			"type": 1,
-			"methodName": "sign1"
+			"methodName": "xmldsig_sign_6"
 		}
 	}
 ]

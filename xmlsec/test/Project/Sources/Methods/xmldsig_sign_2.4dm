@@ -1,4 +1,4 @@
-//%attributes = {}
+//%attributes = {"invisible":true}
 /*
 
 sign - add template
@@ -30,7 +30,7 @@ $params.xmldsig.ref.type:="http://www.w3.org/2000/09/xmldsig#Object"
 
   //when the xml does not contain a template, one is created according to xmldsig params
 
-$doc:=Folder:C1567(fk resources folder:K87:11).folder("sign2").file("sign2-doc.xml")
+$doc:=Folder:C1567(fk resources folder:K87:11).folder("xmldsig_sign").file("sign-doc.xml")
 $rsakey:=Folder:C1567(fk resources folder:K87:11).file("rsakey.pem")
 
 $params.xml:=$doc.getText()

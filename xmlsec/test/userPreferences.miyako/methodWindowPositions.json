@@ -161,12 +161,6 @@
 		"width": 1124,
 		"height": 904
 	},
-	"Sources/Methods/verify1.4dm": {
-		"left": 466,
-		"top": 385,
-		"width": 877,
-		"height": 469
-	},
 	"Sources/Methods/sign2.4dm": {
 		"left": 480,
 		"top": 136,
@@ -197,29 +191,11 @@
 		"width": 877,
 		"height": 547
 	},
-	"Sources/Methods/verify2.4dm": {
-		"left": 466,
-		"top": 411,
-		"width": 877,
-		"height": 443
-	},
-	"Sources/Methods/verify3.4dm": {
-		"left": 466,
-		"top": 411,
-		"width": 877,
-		"height": 443
-	},
-	"Sources/Methods/another_test.4dm": {
-		"left": 796,
-		"top": 136,
-		"width": 1124,
-		"height": 904
-	},
 	"Sources/Methods/XAdES.4dm": {
-		"left": 76,
-		"top": 172,
-		"width": 1124,
-		"height": 930
+		"left": 324,
+		"top": 256,
+		"width": 1360,
+		"height": 767
 	},
 	"Sources/Methods/generate_lowercase_uuid.4dm": {
 		"left": 480,
@@ -234,21 +210,63 @@
 		"height": 417
 	},
 	"Sources/Methods/xmldsig_sign_2.4dm": {
-		"left": 480,
-		"top": 136,
-		"width": 1124,
-		"height": 904
+		"left": 466,
+		"top": 226,
+		"width": 589,
+		"height": 715
 	},
 	"Sources/Methods/xmldsig_sign_1.4dm": {
+		"left": 466,
+		"top": 226,
+		"width": 589,
+		"height": 715
+	},
+	"Sources/Methods/xmldsig_sign_3.4dm": {
+		"left": 466,
+		"top": 226,
+		"width": 589,
+		"height": 715
+	},
+	"Sources/Methods/xmldsig_sign_4.4dm": {
+		"left": 466,
+		"top": 226,
+		"width": 589,
+		"height": 715
+	},
+	"Sources/Methods/xmldsig_sign_5.4dm": {
+		"left": 466,
+		"top": 226,
+		"width": 589,
+		"height": 715
+	},
+	"Sources/Methods/xmldsig_sign_6.4dm": {
+		"left": 466,
+		"top": 226,
+		"width": 589,
+		"height": 715
+	},
+	"Trash/Methods/(verify3).4dm": {
 		"left": 480,
+		"top": 129,
+		"width": 893,
+		"height": 857
+	},
+	"Trash/Methods/(verify2).4dm": {
+		"left": 466,
+		"top": 411,
+		"width": 877,
+		"height": 443
+	},
+	"Trash/Methods/(verify1).4dm": {
+		"left": 466,
+		"top": 385,
+		"width": 877,
+		"height": 469
+	},
+	"Trash/Methods/(another_test).4dm": {
+		"left": 796,
 		"top": 136,
 		"width": 1124,
 		"height": 904
-	},
-	"Sources/Methods/xmldsig_sign_3.4dm": {
-		"left": 522,
-		"top": 161,
-		"width": 1124,
-		"height": 878
 	}
 }

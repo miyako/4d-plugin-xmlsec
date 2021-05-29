@@ -6,21 +6,6 @@
             "theme": "xmlsec",
             "syntax": "xmlsec sign(&J;&O;&Y):J",
             "threadSafe": true
-        },
-        {
-            "theme": "xmlsec",
-            "syntax": "xmlsec verify(&J;&O;&Y):J",
-            "threadSafe": true
-        },
-        {
-            "theme": "xmlsec",
-            "syntax": "xmlsec encrypt(&J;&O;&O):J",
-            "threadSafe": true
-        },
-        {
-            "theme": "xmlsec",
-            "syntax": "xmlsec decrypt(&J;&O;&O):J",
-            "threadSafe": true
         }
     ]
 }

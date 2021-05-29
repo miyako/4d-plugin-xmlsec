@@ -197,15 +197,6 @@
 		"bookmarks": [],
 		"stamp": "2021-05-27T08:01:07.817Z"
 	},
-	"Sources/Methods/verify1.4dm": {
-		"startSelection": 46,
-		"endSelection": 46,
-		"firstSelectedLine": 6,
-		"lastSelectedLine": 6,
-		"folding": [],
-		"bookmarks": [],
-		"stamp": "2021-05-18T23:02:27.526Z"
-	},
 	"Sources/Methods/sign2.4dm": {
 		"startSelection": 28,
 		"endSelection": 0,
@@ -251,41 +242,17 @@
 		"bookmarks": [],
 		"stamp": "2021-05-18T15:57:28.320Z"
 	},
-	"Sources/Methods/verify2.4dm": {
-		"startSelection": 24,
-		"endSelection": 0,
-		"firstSelectedLine": 3,
-		"lastSelectedLine": 3,
-		"folding": [],
-		"bookmarks": [],
-		"stamp": "2021-05-18T23:05:28.564Z"
-	},
-	"Sources/Methods/verify3.4dm": {
-		"startSelection": 18,
-		"endSelection": 18,
-		"firstSelectedLine": 13,
-		"lastSelectedLine": 13,
-		"folding": [],
-		"bookmarks": [],
-		"stamp": "2021-05-18T23:08:10.222Z"
-	},
-	"Sources/Methods/another_test.4dm": {
-		"startSelection": 31,
-		"endSelection": 31,
-		"firstSelectedLine": 19,
-		"lastSelectedLine": 19,
-		"folding": [],
-		"bookmarks": [],
-		"stamp": "2021-05-27T06:56:14.565Z"
-	},
 	"Sources/Methods/XAdES.4dm": {
-		"startSelection": 18,
-		"endSelection": 18,
-		"firstSelectedLine": 266,
-		"lastSelectedLine": 266,
-		"folding": [],
+		"startSelection": 9,
+		"endSelection": 9,
+		"firstSelectedLine": 70,
+		"lastSelectedLine": 70,
+		"folding": [
+			152,
+			179
+		],
 		"bookmarks": [],
-		"stamp": "2021-05-27T07:30:50.623Z"
+		"stamp": "2021-05-29T02:33:39.467Z"
 	},
 	"Sources/Methods/generate_lowercase_uuid.4dm": {
 		"startSelection": 0,
@@ -296,40 +263,58 @@
 		"bookmarks": [],
 		"stamp": "2021-05-27T08:01:06.296Z"
 	},
-	"Trash/Methods/(TEST).4dm": {
-		"startSelection": 8,
-		"endSelection": 8,
-		"firstSelectedLine": 6,
-		"lastSelectedLine": 6,
-		"folding": [],
-		"bookmarks": [],
-		"stamp": "2021-05-18T23:13:15.375Z"
-	},
 	"Sources/Methods/xmldsig_sign_2.4dm": {
-		"startSelection": 28,
-		"endSelection": 28,
-		"firstSelectedLine": 43,
-		"lastSelectedLine": 43,
+		"startSelection": 0,
+		"endSelection": 0,
+		"firstSelectedLine": 0,
+		"lastSelectedLine": 0,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-27T13:34:06.040Z"
+		"stamp": "2021-05-28T08:19:06.000Z"
 	},
 	"Sources/Methods/xmldsig_sign_1.4dm": {
-		"startSelection": 65,
-		"endSelection": 65,
-		"firstSelectedLine": 13,
-		"lastSelectedLine": 13,
+		"startSelection": 0,
+		"endSelection": 0,
+		"firstSelectedLine": 0,
+		"lastSelectedLine": 0,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-27T13:34:26.448Z"
+		"stamp": "2021-05-28T08:18:53.000Z"
 	},
 	"Sources/Methods/xmldsig_sign_3.4dm": {
-		"startSelection": 43,
-		"endSelection": 43,
-		"firstSelectedLine": 32,
-		"lastSelectedLine": 32,
+		"startSelection": 0,
+		"endSelection": 0,
+		"firstSelectedLine": 0,
+		"lastSelectedLine": 0,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-27T14:31:05.627Z"
+		"stamp": "2021-05-28T08:19:24.000Z"
+	},
+	"Sources/Methods/xmldsig_sign_4.4dm": {
+		"startSelection": 0,
+		"endSelection": 0,
+		"firstSelectedLine": 54,
+		"lastSelectedLine": 54,
+		"folding": [],
+		"bookmarks": [],
+		"stamp": "2021-05-29T03:29:48.388Z"
+	},
+	"Sources/Methods/xmldsig_sign_5.4dm": {
+		"startSelection": 14,
+		"endSelection": 14,
+		"firstSelectedLine": 42,
+		"lastSelectedLine": 42,
+		"folding": [],
+		"bookmarks": [],
+		"stamp": "2021-05-29T03:31:14.582Z"
+	},
+	"Sources/Methods/xmldsig_sign_6.4dm": {
+		"startSelection": 4,
+		"endSelection": 4,
+		"firstSelectedLine": 30,
+		"lastSelectedLine": 30,
+		"folding": [],
+		"bookmarks": [],
+		"stamp": "2021-05-29T03:30:09.884Z"
 	}
 }
