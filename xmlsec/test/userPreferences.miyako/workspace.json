@@ -2,6 +2,16 @@
 	"editors": [
 		{
 			"type": "method",
+			"id": 2147483631,
+			"previousTabType": "method",
+			"previousTabID": 2147483639,
+			"codeDescriptor": {
+				"type": 1,
+				"methodName": "xmldsig_sign_7"
+			}
+		},
+		{
+			"type": "method",
 			"id": 2147483639,
 			"codeDescriptor": {
 				"type": 1,
@@ -10,6 +20,9 @@
 		},
 		{
 			"type": "explorer"
+		},
+		{
+			"type": "toolbox"
 		}
 	]
 }

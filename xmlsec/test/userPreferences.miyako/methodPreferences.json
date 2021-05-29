@@ -264,57 +264,66 @@
 		"stamp": "2021-05-27T08:01:06.296Z"
 	},
 	"Sources/Methods/xmldsig_sign_2.4dm": {
-		"startSelection": 0,
-		"endSelection": 0,
-		"firstSelectedLine": 0,
-		"lastSelectedLine": 0,
+		"startSelection": 21,
+		"endSelection": 21,
+		"firstSelectedLine": 23,
+		"lastSelectedLine": 23,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-28T08:19:06.000Z"
+		"stamp": "2021-05-29T14:42:00.399Z"
 	},
 	"Sources/Methods/xmldsig_sign_1.4dm": {
 		"startSelection": 0,
 		"endSelection": 0,
-		"firstSelectedLine": 0,
-		"lastSelectedLine": 0,
+		"firstSelectedLine": 5,
+		"lastSelectedLine": 5,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-28T08:18:53.000Z"
+		"stamp": "2021-05-29T14:39:10.926Z"
 	},
 	"Sources/Methods/xmldsig_sign_3.4dm": {
-		"startSelection": 0,
-		"endSelection": 0,
-		"firstSelectedLine": 0,
-		"lastSelectedLine": 0,
+		"startSelection": 32,
+		"endSelection": 32,
+		"firstSelectedLine": 25,
+		"lastSelectedLine": 25,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-28T08:19:24.000Z"
+		"stamp": "2021-05-29T16:45:10.413Z"
 	},
 	"Sources/Methods/xmldsig_sign_4.4dm": {
-		"startSelection": 0,
-		"endSelection": 0,
-		"firstSelectedLine": 54,
-		"lastSelectedLine": 54,
+		"startSelection": 26,
+		"endSelection": 26,
+		"firstSelectedLine": 24,
+		"lastSelectedLine": 24,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-29T03:29:48.388Z"
-	},
-	"Sources/Methods/xmldsig_sign_5.4dm": {
-		"startSelection": 14,
-		"endSelection": 14,
-		"firstSelectedLine": 42,
-		"lastSelectedLine": 42,
-		"folding": [],
-		"bookmarks": [],
-		"stamp": "2021-05-29T03:31:14.582Z"
+		"stamp": "2021-05-29T16:44:49.417Z"
 	},
 	"Sources/Methods/xmldsig_sign_6.4dm": {
-		"startSelection": 4,
-		"endSelection": 4,
-		"firstSelectedLine": 30,
-		"lastSelectedLine": 30,
+		"startSelection": 83,
+		"endSelection": 83,
+		"firstSelectedLine": 75,
+		"lastSelectedLine": 75,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-29T03:30:09.884Z"
+		"stamp": "2021-05-29T19:24:40.010Z"
+	},
+	"Sources/Methods/xmldsig_sign_5.4dm": {
+		"startSelection": 4,
+		"endSelection": 4,
+		"firstSelectedLine": 27,
+		"lastSelectedLine": 27,
+		"folding": [],
+		"bookmarks": [],
+		"stamp": "2021-05-29T17:56:10.279Z"
+	},
+	"Sources/Methods/xmldsig_sign_7.4dm": {
+		"startSelection": 2,
+		"endSelection": 2,
+		"firstSelectedLine": 10,
+		"lastSelectedLine": 10,
+		"folding": [],
+		"bookmarks": [],
+		"stamp": "2021-05-29T19:27:06.942Z"
 	}
 }

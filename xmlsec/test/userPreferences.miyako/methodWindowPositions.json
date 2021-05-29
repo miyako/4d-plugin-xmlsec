@@ -210,40 +210,34 @@
 		"height": 417
 	},
 	"Sources/Methods/xmldsig_sign_2.4dm": {
-		"left": 466,
-		"top": 226,
-		"width": 589,
-		"height": 715
+		"left": 995,
+		"top": 184,
+		"width": 1111,
+		"height": 689
 	},
 	"Sources/Methods/xmldsig_sign_1.4dm": {
-		"left": 466,
-		"top": 226,
-		"width": 589,
-		"height": 715
+		"left": 591,
+		"top": 228,
+		"width": 1111,
+		"height": 663
 	},
 	"Sources/Methods/xmldsig_sign_3.4dm": {
-		"left": 466,
-		"top": 226,
-		"width": 589,
-		"height": 715
+		"left": 591,
+		"top": 254,
+		"width": 1111,
+		"height": 637
 	},
 	"Sources/Methods/xmldsig_sign_4.4dm": {
-		"left": 466,
-		"top": 226,
-		"width": 589,
-		"height": 715
-	},
-	"Sources/Methods/xmldsig_sign_5.4dm": {
-		"left": 466,
-		"top": 226,
-		"width": 589,
-		"height": 715
+		"left": 591,
+		"top": 254,
+		"width": 1111,
+		"height": 637
 	},
 	"Sources/Methods/xmldsig_sign_6.4dm": {
-		"left": 466,
-		"top": 226,
-		"width": 589,
-		"height": 715
+		"left": 833,
+		"top": 206,
+		"width": 1217,
+		"height": 609
 	},
 	"Trash/Methods/(verify3).4dm": {
 		"left": 480,
@@ -268,5 +262,23 @@
 		"top": 136,
 		"width": 1124,
 		"height": 904
+	},
+	"Trash/Methods/(xmldsig_sign_5).4dm": {
+		"left": 0,
+		"top": 376,
+		"width": 1111,
+		"height": 663
+	},
+	"Sources/Methods/xmldsig_sign_5.4dm": {
+		"left": 818,
+		"top": 231,
+		"width": 1102,
+		"height": 809
+	},
+	"Sources/Methods/xmldsig_sign_7.4dm": {
+		"left": 833,
+		"top": 206,
+		"width": 1217,
+		"height": 609
 	}
 }

@@ -5,9 +5,6 @@ sign -use template
 
 */
 
-$dsig_id:="xmldsig-"+generate_lowercase_uuid 
-$keyinfo_id:=$dsig_id+"-keyinfo"
-
 $params:=New object:C1471
 
   //when the xml contains a template it is used "as is"
