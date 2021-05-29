@@ -11,3 +11,7 @@ XML signature based on [xmlsec](https://www.aleksey.com/xmlsec/)
  ## XAdES tools
  
  * https://www.evrotrust.com/landing/en/a/validation
+
+## XML:DSIG tools
+
+* https://tools.chilkat.io/xmlDsigVerify.cshtml
