@@ -302,11 +302,11 @@
 	"Sources/Methods/xmldsig_sign_6.4dm": {
 		"startSelection": 0,
 		"endSelection": 0,
-		"firstSelectedLine": 29,
-		"lastSelectedLine": 29,
+		"firstSelectedLine": 27,
+		"lastSelectedLine": 27,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-29T19:38:54.934Z"
+		"stamp": "2021-05-29T19:40:31.357Z"
 	},
 	"Sources/Methods/xmldsig_sign_5.4dm": {
 		"startSelection": 4,

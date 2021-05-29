@@ -1,7 +1,7 @@
 //%attributes = {"invisible":true}
 /*
 
-sign - add template
+sign - XAdES
 
 */
 
@@ -27,8 +27,6 @@ $params.xmldsig.ref:=New object:C1471
 $params.xmldsig.ref.id:=$ref_id
 $params.xmldsig.ref.type:="http://www.w3.org/2000/09/xmldsig#Object"
 
-  //when the xml does not contain a template, one is created according to xmldsig params
-
 $params.xmldsig.ski:=False:C215  //default:false
 $params.xmldsig.crl:=False:C215  //default:false
 $params.xmldsig.subjectName:=False:C215  //default:false
@@ -40,7 +38,7 @@ $params.xmldsig.certificate:=True:C214  //default:true
   //pass an array of X509 certificates to create a chain for xades
 
 $cert1:=Folder:C1567(fk resources folder:K87:11).folder("xades").file("EIDAS CERTIFICADO PRUEBAS - 99999999R.der")  //sign cert
-$cert2:=Folder:C1567(fk resources folder:K87:11).folder("xades").file("AC FNMT Usuarios.der")  //intergediate cert
+$cert2:=Folder:C1567(fk resources folder:K87:11).folder("xades").file("AC FNMT Usuarios.der")  //intermediate cert
 $cert3:=Folder:C1567(fk resources folder:K87:11).folder("xades").file("AC RAIZ FNMT-RCM.der")  //root cert
 
 ARRAY BLOB:C1222($certBLOBs;3)
