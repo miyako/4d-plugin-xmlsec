@@ -1,7 +1,7 @@
 //%attributes = {"invisible":true}
 /*
 
-sign - XAdES
+sign - XAdES - PEM
 
 */
 
@@ -37,11 +37,12 @@ $params.xmldsig.certificate:=True:C214  //default:true
   //the pkcs12 certs are added in the reverse order by xmlsec!
   //pass an array of X509 certificates to create a chain for xades
 
-$cert1:=Folder:C1567(fk resources folder:K87:11).folder("xades").file("EIDAS CERTIFICADO PRUEBAS - 99999999R.der")  //sign cert
+$cert1:=Folder:C1567(fk resources folder:K87:11).folder("xades").file("EIDAS CERTIFICADO PRUEBAS - 99999999R.der")  //signing cert
 $cert2:=Folder:C1567(fk resources folder:K87:11).folder("xades").file("AC FNMT Usuarios.der")  //intermediate cert
 $cert3:=Folder:C1567(fk resources folder:K87:11).folder("xades").file("AC RAIZ FNMT-RCM.der")  //root cert
 
 ARRAY BLOB:C1222($certBLOBs;3)
+$certBLOBs{0}:=$cert1.getContent()  //when key#pkcs, pass the signing cert in element #0
 $certBLOBs{1}:=$cert1.getContent()
 $certBLOBs{2}:=$cert2.getContent()
 $certBLOBs{3}:=$cert3.getContent()
@@ -96,18 +97,3 @@ ASSERT:C1129($status.success)
 $xml:=$status.xml
 
 SET TEXT TO PASTEBOARD:C523($xml)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

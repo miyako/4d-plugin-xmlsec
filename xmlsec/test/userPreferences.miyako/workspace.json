@@ -17,12 +17,6 @@
 				"type": 1,
 				"methodName": "xmldsig_sign_6"
 			}
-		},
-		{
-			"type": "explorer"
-		},
-		{
-			"type": "toolbox"
 		}
 	]
 }

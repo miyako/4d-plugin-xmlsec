@@ -1,7 +1,7 @@
 //%attributes = {"invisible":true}
 /*
 
-sign - add template
+sign - use pkcs#12
 
 */
 

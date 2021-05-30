@@ -935,11 +935,176 @@ static void c14n_node_xpath(xmlDocPtr doc,
     
 }
 
+static bool getHash(X509* cert, xmlString& value, xmlSecTransformId digestMethod){
+    
+    bool success = false;
+    
+    if(cert){
+        BIO *mem = BIO_new(BIO_s_mem());
+        if(mem){
+            if(X509_print(mem, cert) > 0){
+                (void)BIO_flush(mem);
+                long size = BIO_pending(mem);
+                std::vector<unsigned char>buf(size);
+                size = BIO_read(mem, &buf[0], size);
+                getHash(&buf[0], size, value, digestMethod);
+                BIO_free_all(mem);
+            }
+        }
+    }
+    
+    return success;
+}
+
+static void getIssuer(X509 *cert, xmlString& issuerName, xmlString& serialNumber) {
+    
+    if(cert){
+        X509_NAME *_name = X509_get_issuer_name(cert);
+        if(_name){
+            BIO *mem = BIO_new(BIO_s_mem());
+            if(mem){
+                if (X509_NAME_print_ex(mem, _name, 0, XN_FLAG_RFC2253) > 0) {
+                    (void)BIO_flush(mem);
+                    long size = BIO_pending(mem);
+                    std::vector<unsigned char>buf(size);
+                    size = BIO_read(mem, &buf[0], size);
+                    issuerName = xmlString(BAD_CAST &buf[0], size);
+                }
+                BIO_free_all(mem);
+            }
+            ASN1_INTEGER *asni = X509_get_serialNumber(cert);
+            BIGNUM *bn = ASN1_INTEGER_to_BN(asni, NULL);
+            if(bn){
+                char *p = BN_bn2dec(bn);
+                xmlChar *res = xmlCharStrdup(p);
+                serialNumber = res;
+                BN_free(bn);
+            }
+        }
+    }
+}
+
+static bool getIssuerPEM(PA_ObjectRef options,
+                         PA_Variable Param3, xmlSecTransformId digestMethod,
+                         xmlString& hash, xmlString& issuerName, xmlString& serialNumber){
+ 
+    bool success = false;
+    
+    xmlSecKeyDataFormat crtFmt = getFmt(options, L"cert");
+    
+    xmlString password;
+    
+    if(options) {
+        
+        CUTF8String textValue;
+        
+        if(ob_get_s(options, L"password", &textValue)) {
+            password = BAD_CAST textValue.c_str();
+        }
+        
+    }
+    
+    if(PA_GetVariableKind(Param3) == eVK_ArrayBlob) {
+        if(PA_GetArrayNbElements(Param3)){
+            PA_Blob blob = PA_GetBlobInArray(Param3, 0);
+            PA_Handle h = blob.fHandle;
+            
+            if(h) {
+                void *p = (void *)PA_LockHandle(h);
+                PA_long32 size = PA_GetHandleSize(h);
+                
+                getHash(p, size, hash, digestMethod);
+                
+                BIO *bio = BIO_new_mem_buf(p, size);
+                X509 *cert = NULL;
+                
+                switch (crtFmt) {
+                    case xmlSecKeyDataFormatPem:
+                    case xmlSecKeyDataFormatCertPem:
+                    case xmlSecKeyDataFormatPkcs8Pem:
+                        cert = PEM_read_bio_X509(bio, NULL, 0, NULL);
+                        break;
+                    default:
+                        cert = d2i_X509_bio(bio, NULL);
+                        break;
+                                                                }
+                if(cert) {
+                    getIssuer(cert, issuerName, serialNumber);
+                    success = true;
+                }
+                
+                PA_UnlockHandle(h);
+            }
+            
+        }
+        
+    }
+
+    return success;
+}
+
+static bool getIssuerP12(PA_ObjectRef options,
+                         C_BLOB& Param2, xmlSecTransformId digestMethod,
+                         xmlString& hash, xmlString& issuerName, xmlString& serialNumber){
+ 
+    bool success = false;
+    
+    xmlString password;
+    
+    if(options) {
+        
+        CUTF8String textValue;
+        
+        if(ob_get_s(options, L"password", &textValue)) {
+            password = BAD_CAST textValue.c_str();
+        }
+        
+    }
+        
+    BIO *bio = BIO_new_mem_buf((void *)Param2.getBytesPtr(), Param2.getBytesLength());
+    PKCS12 *p12 = d2i_PKCS12_bio(bio, NULL);
+    
+    EVP_PKEY *key = NULL;
+    X509 *cert = NULL;
+    STACK_OF(X509) *ca = NULL;
+    
+    if(PKCS12_parse(p12, (const char *)password.c_str(), &key, &cert, &ca)){
+        getIssuer(cert, issuerName, serialNumber);
+        
+        BIO *bio = BIO_new(BIO_s_mem());
+        if(bio){
+            i2d_X509_bio(bio, cert);
+            char *p = NULL;
+            int size = BIO_get_mem_data(bio, &p);
+            getHash(p, size, hash, digestMethod);
+            success = true;
+            BIO_free(bio);
+        }
+    }
+    
+    return success;
+}
+
+static bool getIssuer(PA_ObjectRef options,
+                      C_BLOB& Param2,
+                      PA_Variable Param3,
+                      xmlSecTransformId digestMethod, xmlString& hash, xmlString& issuerName, xmlString& serialNumber){
+    
+    xmlSecKeyDataFormat keyFmt = getFmt(options, L"key");
+            
+    if(keyFmt == xmlSecKeyDataFormatPkcs12) {
+        return getIssuerP12(options, Param2, digestMethod, hash, issuerName, serialNumber);
+    }else{
+        return getIssuerPEM(options, Param3, digestMethod, hash, issuerName, serialNumber);
+    }
+    
+}
+
 static void putXades(PA_ObjectRef options,
                      xmlDocPtr doc,
                      xmlNodePtr signNode,
                      xmlSecTransformId digestMethod,
-                     xmlSecDSigCtxPtr pDsigCtx,
+                     C_BLOB& Param2,
                      PA_Variable Param3,
                      C_BLOB& Param4) {
     
@@ -953,19 +1118,11 @@ static void putXades(PA_ObjectRef options,
         
         xmlString xmldsig_ns = BAD_CAST "ds";
         xmlString xades_ns = BAD_CAST"xades";
-        xmlString password;
-        
-        xmlSecKeyDataFormat keyFmt = getFmt(options, L"key");
-        xmlSecKeyDataFormat crtFmt = getFmt(options, L"cert");
         
         if(options) {
             
             CUTF8String textValue;
-            
-            if(ob_get_s(options, L"password", &textValue)) {
-                password = BAD_CAST textValue.c_str();
-            }
-            
+                        
             PA_ObjectRef xmldsig = ob_get_o(options, L"xmldsig");
             
             if(xmldsig) {
@@ -1064,90 +1221,37 @@ static void putXades(PA_ObjectRef options,
                                     }
                                     
 #pragma mark SignedProperties > SignedSignatureProperties > SigningCertificate
-                                           
-                                    xmlNodePtr signingCertificateNode = NULL;
-                                    xmlString hash;
 
-                                    if(PA_GetVariableKind(Param3) == eVK_ArrayBlob) {
-                                        if(PA_GetArrayNbElements(Param3)){
-                                            PA_Blob blob = PA_GetBlobInArray(Param3, 1);
-                                            PA_Handle h = blob.fHandle;
-                                            
-                                            if(h) {
-                                                void *p = (void *)PA_LockHandle(h);
-                                                PA_long32 size = PA_GetHandleSize(h);
-                                                getHash(p, size, hash, digestMethod);
-
-                                                signingCertificateNode = xmlNewNode(xadesNs, BAD_CAST "SigningCertificate");
-                                                xmlAddChild(signedSignaturePropertiesNode, signingCertificateNode);
-                                                
-                                                xmlNodePtr certNode = xmlNewNode(xadesNs, BAD_CAST "Cert");
-                                                xmlAddChild(signingCertificateNode, certNode);
-                                                xmlNodePtr certDigestNode = xmlNewNode(xadesNs, BAD_CAST "CertDigest");
-                                                xmlAddChild(certNode, certDigestNode);
-                                                xmlNodePtr issuerSerialNode = xmlNewNode(xadesNs, BAD_CAST "IssuerSerial");
-                                                xmlAddChild(certNode, issuerSerialNode);
-                                                
-                                                xmlNodePtr digestMethodNode = xmlNewNode(dsNs, BAD_CAST "DigestMethod");
-                                                xmlNodePtr digestValueNode = xmlNewNode(dsNs, BAD_CAST "DigestValue");
-                                                xmlAddChild(certDigestNode, digestMethodNode);
-                                                xmlAddChild(certDigestNode, digestValueNode);
-                                                xmlSetProp(digestMethodNode, BAD_CAST "Algorithm", digestMethod->name);
-                                                xmlNodeSetContent(digestValueNode, BAD_CAST hash.c_str());
-                                                
-                                                BIO *bio = BIO_new_mem_buf(p, size);
-                                                X509 *cert = NULL;
-                                                
-                                                switch (crtFmt) {
-                                                    case xmlSecKeyDataFormatPem:
-                                                    case xmlSecKeyDataFormatCertPem:
-                                                    case xmlSecKeyDataFormatPkcs8Pem:
-                                                        cert = PEM_read_bio_X509(bio, NULL, 0, NULL);
-                                                        break;
-                                                    default:
-                                                        cert = d2i_X509_bio(bio, NULL);
-                                                        break;
-                                                }
-                                                if(bio) {
-                                                    if(cert){
-                                                        X509_NAME *_name = X509_get_issuer_name(cert);
-                                                        if(_name){
-                                                            BIO *mem = BIO_new(BIO_s_mem());
-                                                            if(mem){
-                                                                if (X509_NAME_print_ex(mem, _name, 0, XN_FLAG_RFC2253) > 0) {
-                                                                    (void)BIO_flush(mem);
-                                                                    long size = BIO_pending(mem);
-                                                                    xmlChar *res = (xmlChar *)xmlMalloc(size + 1);
-                                                                    if(res){
-                                                                        size = BIO_read(mem, res, size);
-                                                                        res[size] = '\0';
-                                                                        xmlNodePtr issuerNameNode = xmlNewNode(dsNs, BAD_CAST "X509IssuerName");
-                                                                        xmlAddChild(issuerSerialNode, issuerNameNode);
-                                                                        xmlNodeSetContent(issuerNameNode, BAD_CAST res);
-                                                                    }
-                                                                }
-                                                                BIO_free_all(mem);
-                                                            }
-                                                        }
-                                                        ASN1_INTEGER *asni = X509_get_serialNumber(cert);
-                                                        BIGNUM *bn = ASN1_INTEGER_to_BN(asni, NULL);
-                                                        if(bn){
-                                                            char *p = BN_bn2dec(bn);
-                                                            xmlChar *res = xmlCharStrdup(p);
-                                                            xmlNodePtr serialNumberNode = xmlNewNode(dsNs, BAD_CAST "X509SerialNumber");
-                                                            xmlAddChild(issuerSerialNode, serialNumberNode);
-                                                            xmlNodeSetContent(serialNumberNode, BAD_CAST res);
-                                                            BN_free(bn);
-                                                        }
-                                                        X509_free(cert);
-                                                    }
-                                                    BIO_free(bio);
-                                                }
-                                                PA_UnlockHandle(h);
-                                            }
-                                        }
+                                    xmlString hash, issuerName, serialNumber;
+              
+                                    if(getIssuer(options, Param2, Param3, digestMethod, hash, issuerName, serialNumber)){
+                                        
+                                        xmlNodePtr signingCertificateNode = xmlNewNode(xadesNs, BAD_CAST "SigningCertificate");
+                                        xmlAddChild(signedSignaturePropertiesNode, signingCertificateNode);
+                                        xmlNodePtr certNode = xmlNewNode(xadesNs, BAD_CAST "Cert");
+                                        xmlAddChild(signingCertificateNode, certNode);
+                                        xmlNodePtr certDigestNode = xmlNewNode(xadesNs, BAD_CAST "CertDigest");
+                                        xmlAddChild(certNode, certDigestNode);
+                                        xmlNodePtr digestMethodNode = xmlNewNode(dsNs, BAD_CAST "DigestMethod");
+                                        xmlAddChild(certDigestNode, digestMethodNode);
+                                        xmlNodePtr digestValueNode = xmlNewNode(dsNs, BAD_CAST "DigestValue");
+                                        xmlAddChild(certDigestNode, digestValueNode);
+                                        
+                                        xmlSetProp(digestMethodNode, BAD_CAST "Algorithm", digestMethod->name);
+                                        xmlNodeSetContent(digestValueNode, BAD_CAST hash.c_str());
+                                        
+                                        xmlNodePtr issuerSerialNode = xmlNewNode(xadesNs, BAD_CAST "IssuerSerial");
+                                        xmlAddChild(certNode, issuerSerialNode);
+                                        
+                                        xmlNodePtr issuerNameNode = xmlNewNode(dsNs, BAD_CAST "X509IssuerName");
+                                        xmlAddChild(issuerSerialNode, issuerNameNode);
+                                        xmlNodeSetContent(issuerNameNode, issuerName.c_str());
+                                        
+                                        xmlNodePtr serialNumberNode = xmlNewNode(dsNs, BAD_CAST "X509SerialNumber");
+                                        xmlAddChild(issuerSerialNode, serialNumberNode);
+                                        xmlNodeSetContent(serialNumberNode, serialNumber.c_str());
                                     }
-                                
+
 #pragma mark SignedProperties > SignedSignatureProperties > SignaturePolicyIdentifer
                                     
                                     bool signaturePolicyImplied = true;
@@ -1678,9 +1782,7 @@ static void doIt(PA_PluginParameters params,
                                     if(refNode) {
                                         
                                         if(xmlSecTmplReferenceAddTransform(refNode, xmlSecTransformEnvelopedId)) {
-                                                  
-                                            putXades(options, doc, signNode, digestMethod, pDsigCtx, Param3, Param4);
-                                            
+                                                                                              
                                         }else{
                                             ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplReferenceAddTransform");
                                         }
@@ -1726,6 +1828,8 @@ static void doIt(PA_PluginParameters params,
                                         loadCerts(options, signNode, digestMethod, secKey, keyFmt, crtFmt, Param3);
                                            
                                     }
+                                    
+                                    putXades(options, doc, signNode, digestMethod, Param2, Param3, Param4);
 
                                     switch (command) {
                                         case xmlsec_command_sign:

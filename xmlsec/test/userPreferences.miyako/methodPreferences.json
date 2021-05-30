@@ -302,28 +302,28 @@
 	"Sources/Methods/xmldsig_sign_6.4dm": {
 		"startSelection": 0,
 		"endSelection": 0,
-		"firstSelectedLine": 27,
-		"lastSelectedLine": 27,
+		"firstSelectedLine": 7,
+		"lastSelectedLine": 7,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-29T19:40:31.357Z"
+		"stamp": "2021-05-30T07:12:58.291Z"
 	},
 	"Sources/Methods/xmldsig_sign_5.4dm": {
-		"startSelection": 4,
-		"endSelection": 4,
-		"firstSelectedLine": 27,
-		"lastSelectedLine": 27,
+		"startSelection": 38,
+		"endSelection": 38,
+		"firstSelectedLine": 52,
+		"lastSelectedLine": 52,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-29T17:56:10.279Z"
+		"stamp": "2021-05-30T00:31:34.723Z"
 	},
 	"Sources/Methods/xmldsig_sign_7.4dm": {
-		"startSelection": 2,
-		"endSelection": 2,
-		"firstSelectedLine": 10,
-		"lastSelectedLine": 10,
+		"startSelection": 0,
+		"endSelection": 0,
+		"firstSelectedLine": 5,
+		"lastSelectedLine": 0,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-29T19:27:06.942Z"
+		"stamp": "2021-05-30T07:12:58.380Z"
 	}
 }

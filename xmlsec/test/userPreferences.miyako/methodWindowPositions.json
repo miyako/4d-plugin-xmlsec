@@ -234,10 +234,10 @@
 		"height": 637
 	},
 	"Sources/Methods/xmldsig_sign_6.4dm": {
-		"left": 833,
-		"top": 206,
-		"width": 1217,
-		"height": 609
+		"left": 258,
+		"top": 204,
+		"width": 948,
+		"height": 724
 	},
 	"Trash/Methods/(verify3).4dm": {
 		"left": 480,
@@ -270,15 +270,15 @@
 		"height": 663
 	},
 	"Sources/Methods/xmldsig_sign_5.4dm": {
-		"left": 818,
-		"top": 231,
-		"width": 1102,
-		"height": 809
+		"left": 81,
+		"top": 214,
+		"width": 980,
+		"height": 801
 	},
 	"Sources/Methods/xmldsig_sign_7.4dm": {
-		"left": 833,
-		"top": 206,
-		"width": 1217,
-		"height": 609
+		"left": 258,
+		"top": 204,
+		"width": 948,
+		"height": 724
 	}
 }

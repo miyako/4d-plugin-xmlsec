@@ -49,6 +49,8 @@
 #include "libxslt/xslt.h"
 #include "libxslt/security.h"
 
+#include "openssl/pkcs12.h"
+
 #include "C_TEXT.h"
 #include "C_BLOB.h"
 
@@ -129,5 +131,16 @@ static void xmlsec_decrypt(PA_PluginParameters params);
 static std::string base64_encode_uri(const unsigned char *ptr, size_t size);
 static std::string base64_encode(const unsigned char *ptr, size_t size);
 static void base64_decode_uri(std::vector<unsigned char>& decoded, std::string encoded);
+
+typedef struct _xmlSecOpenSSLX509DataCtx                xmlSecOpenSSLX509DataCtx,
+                                                        *xmlSecOpenSSLX509DataCtxPtr;
+struct _xmlSecOpenSSLX509DataCtx {
+    X509*               keyCert;
+    STACK_OF(X509)*     certsList;
+    STACK_OF(X509_CRL)* crlsList;
+};
+
+#define xmlSecOpenSSLX509DataGetCtx(data) \
+    ((xmlSecOpenSSLX509DataCtxPtr)(((xmlSecByte*)(data)) + sizeof(xmlSecKeyData)))
 
 #endif /* PLUGIN_XMLSEC_H */
