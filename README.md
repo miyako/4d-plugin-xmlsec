@@ -10,6 +10,12 @@ XML signature based on [xmlsec](https://www.aleksey.com/xmlsec/).
 
 [miyako.github.io](https://miyako.github.io/2021/05/31/4d-plugin-xmlsec.html)
 
+## OpenSSL tips
+
+* https://www.ssl.com/how-to/export-certificates-private-key-from-pkcs12-file-with-openssl/#ftoc-heading-5
+
+the plugin accepts P12 or PEM/DER, but you can convert keys and certificates from one format to another.
+
  ## XAdES tools
  
  * https://www.evrotrust.com/landing/en/a/validation
