@@ -20,7 +20,7 @@ the plugin accepts P12 or PEM/DER, but you can convert keys and certificates fro
  
  * [www.evrotrust.com](https://www.evrotrust.com/landing/en/a/validation)
 
-* [lovele0107/signatures-conformance-checker](https://github.com/lovele0107/signatures-conformance-checker)
+* [lovele0107/signatures-conformance-checker](https://github.com/lovele0107/signatures-conformance-checker) on [ETSI](https://signatures-conformance-checker.etsi.org/pub/index.php)
 
 ## XML:DSIG tools
 
