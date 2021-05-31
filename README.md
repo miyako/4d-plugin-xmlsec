@@ -6,7 +6,7 @@
 **Note**: for v17 and earlier, move `manifest.json` to `Contents`
 
 # 4d-plugin-xmlsec
-XML signature based on [xmlsec](https://www.aleksey.com/xmlsec/)
+XML signature based on [xmlsec](https://www.aleksey.com/xmlsec/).
 
  ## XAdES tools
  
