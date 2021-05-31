@@ -8,6 +8,8 @@
 # 4d-plugin-xmlsec
 XML signature based on [xmlsec](https://www.aleksey.com/xmlsec/).
 
+[miyako.github.io](https://miyako.github.io/2021/05/31/4d-plugin-xmlsec.html)
+
  ## XAdES tools
  
  * https://www.evrotrust.com/landing/en/a/validation
