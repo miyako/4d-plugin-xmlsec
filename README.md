@@ -18,7 +18,9 @@ the plugin accepts P12 or PEM/DER, but you can convert keys and certificates fro
 
  ## XAdES tools
  
- * https://www.evrotrust.com/landing/en/a/validation
+ * [www.evrotrust.com](https://www.evrotrust.com/landing/en/a/validation)
+
+* [lovele0107/signatures-conformance-checker](https://github.com/lovele0107/signatures-conformance-checker)
 
 ## XML:DSIG tools
 
