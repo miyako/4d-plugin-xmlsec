@@ -34,7 +34,6 @@ $params.xmldsig.keyValue:=True:C214  //default:true
 $params.xmldsig.issuerSerial:=False:C215  //default:false
 $params.xmldsig.certificate:=True:C214  //default:true
 
-  //the pkcs12 certs are added in the reverse order by xmlsec!
   //pass an array of X509 certificates to create a chain for xades
 
 $cert1:=Folder:C1567(fk resources folder:K87:11).folder("xades").file("EIDAS CERTIFICADO PRUEBAS - 99999999R.der")  //signing cert

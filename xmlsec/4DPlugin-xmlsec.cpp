@@ -686,7 +686,8 @@ static xmlNodePtr loadCerts(PA_ObjectRef options,
         if(keyInfoNode) {
 
             if(keyName.length()){
-                xmlSecTmplKeyInfoAddKeyName(keyInfoNode, BAD_CAST keyName.c_str());
+                xmlSecKeySetName(key, BAD_CAST keyName.c_str());
+//                xmlSecTmplKeyInfoAddKeyName(keyInfoNode, BAD_CAST keyName.c_str());
             }
             
             if(!keyValueNode) {
@@ -1109,8 +1110,6 @@ static void putXades(PA_ObjectRef options,
                      C_BLOB& Param4) {
     
     xmlString reference_id;
-    xmlString signedProperties_id;
-    xmlString unsignedProperties_id;
     
     xmlNsPtr dsNs = NULL;
     
@@ -1175,6 +1174,7 @@ static void putXades(PA_ObjectRef options,
                         
 #pragma mark SignedProperties
                         
+                        xmlString signedProperties_id;
                         xmlNodePtr signedPropertiesNode = xmlNewNode(xadesNs, BAD_CAST "SignedProperties");
                         
                         if(signedPropertiesNode) {
@@ -1293,15 +1293,35 @@ static void putXades(PA_ObjectRef options,
                                                                 xmlNodePtr identifierNode = xmlNewNode(xadesNs, BAD_CAST "Identifier");
                                                                 xmlAddChild(sigPolicyIdNode, identifierNode);
                                                                 xmlNodeSetContent(identifierNode, identifier.c_str());
+                                                                if(ob_get_s(sigPolicyId, L"description", &textValue)) {
+                                                                    if(textValue.length()) {
+                                                                        xmlNodePtr descriptionNode = xmlNewNode(xadesNs, BAD_CAST "Description");
+                                                                        xmlAddChild(sigPolicyIdNode, descriptionNode);
+                                                                        xmlNodeSetContent(descriptionNode, textValue.c_str());
+                                                                    }
+                                                                }
                                                                 
-                                                                xmlNodePtr descriptionNode = xmlNewNode(xadesNs, BAD_CAST "Description");
-                                                                xmlAddChild(sigPolicyIdNode, descriptionNode);
-                                                                
-//                                                                xmlNodePtr documentationReferencesNode = xmlNewNode(xadesNs, BAD_CAST "DocumentationReferences");
-//                                                                xmlAddChild(sigPolicyIdNode, documentationReferencesNode);
-//                                                                xmlNodePtr documentationReferenceNode = xmlNewNode(xadesNs, BAD_CAST "DocumentationReference");
-//                                                                xmlAddChild(documentationReferencesNode, documentationReferenceNode);
-                                                                
+                                                                PA_CollectionRef documentationReferences = ob_get_c(sigPolicyId, L"documentationReferences");
+                                                                if(documentationReferences){
+                                                                    xmlNodePtr documentationReferencesNode = xmlNewNode(xadesNs, BAD_CAST "DocumentationReferences");
+                                                                    xmlAddChild(sigPolicyIdNode, documentationReferencesNode);
+                                                                    for(PA_ulong32 ii = 0; ii < PA_GetCollectionLength(signaturePolicyId); ++ii) {
+                                                                        PA_Variable vv = PA_GetCollectionElement(signaturePolicyId, ii);
+                                                                        if(PA_GetVariableKind(vv) == eVK_Object) {
+                                                                            PA_ObjectRef oo = PA_GetObjectVariable(vv);
+                                                                            if(oo) {
+                                                                                if(ob_get_s(oo, L"documentationReference", &textValue)) {
+                                                                                    if(textValue.length()) {
+                                                                                        xmlNodePtr documentationReferenceNode = xmlNewNode(xadesNs, BAD_CAST "DocumentationReference");
+                                                                                        xmlAddChild(documentationReferencesNode, documentationReferenceNode);
+                                                                                        xmlNodeSetContent(documentationReferenceNode, BAD_CAST textValue.c_str());
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+
                                                                 if(Param4.getBytesLength()) {
                                                                     void *p = (void *)Param4.getBytesPtr();
                                                                     PA_long32 size = Param4.getBytesLength();
@@ -1500,23 +1520,62 @@ static void putXades(PA_ObjectRef options,
                     
 #pragma mark UnsignedProperties
    
-                        PA_ObjectRef unsignedSignatureProperties = ob_get_o(qualifyingProperties, L"unsignedSignatureProperties");
-                        if(unsignedSignatureProperties) {
-                            if(ob_get_s(unsignedSignatureProperties, L"id", &textValue)) {
-                                unsignedProperties_id = BAD_CAST textValue.c_str();
-                            }
-                            xmlNodePtr unsignedSignaturePropertiesNode = xmlNewNode(xadesNs, BAD_CAST "UnsignedProperties");
-                            if(unsignedSignaturePropertiesNode) {
-                                xmlAddChild(qualifyingPropertiesNode, unsignedSignaturePropertiesNode);
+                        xmlString unsignedProperties_id;
+                        PA_ObjectRef unsignedProperties = ob_get_o(qualifyingProperties, L"unsignedProperties");
+                        if(unsignedProperties) {
+                            xmlNodePtr unsignedPropertiesNode = xmlNewNode(xadesNs, BAD_CAST "UnsignedProperties");
+                            if(unsignedPropertiesNode) {
+                                xmlAddChild(qualifyingPropertiesNode, unsignedPropertiesNode);
+                                if(ob_get_s(unsignedProperties, L"id", &textValue)) {
+                                    unsignedProperties_id = BAD_CAST textValue.c_str();
+                                }
                                 if(unsignedProperties_id.length()) {
-                                    xmlSetProp(unsignedSignaturePropertiesNode, BAD_CAST "Id", unsignedProperties_id.c_str());
-                                    xmlString unsignedProperties_uri = BAD_CAST "#";
-                                    unsignedProperties_uri += signedProperties_id;
-                                    xmlNodePtr refNode = xmlSecTmplSignatureAddReference(signNode,
-                                                                                         digestMethod,
-                                                                                         NULL,
-                                                                                         unsignedProperties_uri.c_str(),
-                                                                                         NULL);
+                                    xmlSetProp(unsignedPropertiesNode, BAD_CAST "Id", unsignedProperties_id.c_str());
+                                }
+
+#pragma mark UnsignedProperties > UnsignedSignatureProperties[]
+                                
+                                PA_CollectionRef unsignedSignatureProperties = ob_get_c(unsignedProperties, L"unsignedSignatureProperties");
+                                if(unsignedSignatureProperties) {
+                                    xmlNodePtr unsignedSignaturePropertiesNode = xmlNewNode(xadesNs, BAD_CAST "UnsignedSignatureProperties");
+                                    xmlAddChild(unsignedPropertiesNode, unsignedSignaturePropertiesNode);
+                                    
+                                    for(PA_ulong32 i = 0; i < PA_GetCollectionLength(unsignedSignatureProperties); ++i) {
+                                        PA_Variable v = PA_GetCollectionElement(unsignedSignatureProperties, i);
+                                        if(PA_GetVariableKind(v) == eVK_Object) {
+                                            PA_ObjectRef o = PA_GetObjectVariable(v);
+                                            if(o) {
+                                                
+#pragma mark UnsignedProperties > UnsignedSignatureProperties[] > SignatureTimeStamp
+                                                
+                                                PA_CollectionRef signatureTimeStamp = ob_get_c(o, L"signatureTimeStamp");
+                                                if(signatureTimeStamp){
+                                                    
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+#pragma mark UnsignedProperties > UnsignedDataObjectProperties[]
+                                
+                                PA_CollectionRef unsignedDataObjectProperties = ob_get_c(unsignedSignatureProperties, L"unsignedDataObjectProperties");
+                                if(unsignedDataObjectProperties) {
+                                    xmlNodePtr unsignedDataObjectPropertiesNode = xmlNewNode(xadesNs, BAD_CAST "UnsignedDataObjectProperties");
+                                    for(PA_ulong32 i = 0; i < PA_GetCollectionLength(unsignedDataObjectProperties); ++i) {
+                                        PA_Variable v = PA_GetCollectionElement(unsignedDataObjectProperties, i);
+                                        if(PA_GetVariableKind(v) == eVK_Object) {
+                                            PA_ObjectRef o = PA_GetObjectVariable(v);
+                                            
+#pragma mark UnsignedProperties > UnsignedDataObjectProperties[].UnsignedDataObjectProperty
+                                            if(o) {
+                                                if(ob_get_s(unsignedProperties, L"unsignedDataObjectProperty", &textValue)){
+                                                    xmlNodePtr unsignedDataObjectPropertyNode = xmlNewNode(xadesNs, BAD_CAST "UnsignedDataObjectProperty");
+                                                    xmlNodeSetContent(unsignedDataObjectPropertyNode, BAD_CAST textValue.c_str());
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1745,19 +1804,13 @@ static void doIt(PA_PluginParameters params,
                     xmlDocPtr doc = NULL;
                     xmlSecKeyDataFormat keyFmt = getFmt(options, L"key");
                     xmlSecKeyDataFormat crtFmt = getFmt(options, L"cert");
-                    
-                    xmlString name;//->xmlSecKeySetName
-                               
+                                                   
                     xmlSecTransformId digestMethod = getDigestMethod(options, L"digest");
 
                     if(options) {
                         
                         CUTF8String textValue;
-                        
-                        if(ob_get_s(options, L"name", &textValue)) {
-                            name = BAD_CAST textValue.c_str();
-                        }
-                                                                        
+                                                                                                
                         doc = parseXml(options, L"xml");
                         
                     }
@@ -1811,11 +1864,6 @@ static void doIt(PA_PluginParameters params,
                                         
                                         if(secKey) {
                                             
-                                            if(name.length()) {
-                                                if(xmlSecKeySetName(secKey, name.c_str()) != 0) {
-                                                    ob_set_s(status, L"error", (const char *)"failed:xmlSecKeySetName");
-                                                }
-                                            }
                                             if(xmlSecCryptoAppDefaultKeysMngrAdoptKey(keysMngr, secKey) == 0){
                                                 
                                             }else{

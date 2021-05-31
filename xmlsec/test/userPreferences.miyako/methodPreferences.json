@@ -243,16 +243,13 @@
 		"stamp": "2021-05-18T15:57:28.320Z"
 	},
 	"Sources/Methods/XAdES.4dm": {
-		"startSelection": 9,
-		"endSelection": 9,
-		"firstSelectedLine": 70,
-		"lastSelectedLine": 70,
-		"folding": [
-			152,
-			179
-		],
+		"startSelection": 0,
+		"endSelection": 0,
+		"firstSelectedLine": 212,
+		"lastSelectedLine": 212,
+		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-29T02:33:39.467Z"
+		"stamp": "2021-05-31T02:54:56.565Z"
 	},
 	"Sources/Methods/generate_lowercase_uuid.4dm": {
 		"startSelection": 0,
@@ -273,13 +270,13 @@
 		"stamp": "2021-05-29T14:42:00.399Z"
 	},
 	"Sources/Methods/xmldsig_sign_1.4dm": {
-		"startSelection": 0,
-		"endSelection": 0,
-		"firstSelectedLine": 5,
-		"lastSelectedLine": 5,
+		"startSelection": 12,
+		"endSelection": 12,
+		"firstSelectedLine": 20,
+		"lastSelectedLine": 20,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-29T14:39:10.926Z"
+		"stamp": "2021-05-31T01:14:34.946Z"
 	},
 	"Sources/Methods/xmldsig_sign_3.4dm": {
 		"startSelection": 32,
@@ -300,28 +297,28 @@
 		"stamp": "2021-05-29T16:44:49.417Z"
 	},
 	"Sources/Methods/xmldsig_sign_6.4dm": {
-		"startSelection": 0,
-		"endSelection": 0,
-		"firstSelectedLine": 7,
-		"lastSelectedLine": 7,
+		"startSelection": 17,
+		"endSelection": 17,
+		"firstSelectedLine": 73,
+		"lastSelectedLine": 73,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-30T07:12:58.291Z"
+		"stamp": "2021-05-31T01:19:13.242Z"
 	},
 	"Sources/Methods/xmldsig_sign_5.4dm": {
-		"startSelection": 38,
-		"endSelection": 38,
-		"firstSelectedLine": 52,
-		"lastSelectedLine": 52,
+		"startSelection": 35,
+		"endSelection": 0,
+		"firstSelectedLine": 36,
+		"lastSelectedLine": 33,
 		"folding": [],
 		"bookmarks": [],
 		"stamp": "2021-05-30T00:31:34.723Z"
 	},
 	"Sources/Methods/xmldsig_sign_7.4dm": {
-		"startSelection": 0,
-		"endSelection": 0,
-		"firstSelectedLine": 5,
-		"lastSelectedLine": 0,
+		"startSelection": 16,
+		"endSelection": 22,
+		"firstSelectedLine": 23,
+		"lastSelectedLine": 23,
 		"folding": [],
 		"bookmarks": [],
 		"stamp": "2021-05-30T07:12:58.380Z"

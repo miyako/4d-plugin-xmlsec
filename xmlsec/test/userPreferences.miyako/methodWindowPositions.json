@@ -192,10 +192,10 @@
 		"height": 547
 	},
 	"Sources/Methods/XAdES.4dm": {
-		"left": 324,
-		"top": 256,
-		"width": 1360,
-		"height": 767
+		"left": 209,
+		"top": 210,
+		"width": 927,
+		"height": 745
 	},
 	"Sources/Methods/generate_lowercase_uuid.4dm": {
 		"left": 480,
@@ -218,8 +218,8 @@
 	"Sources/Methods/xmldsig_sign_1.4dm": {
 		"left": 591,
 		"top": 228,
-		"width": 1111,
-		"height": 663
+		"width": 668,
+		"height": 737
 	},
 	"Sources/Methods/xmldsig_sign_3.4dm": {
 		"left": 591,
@@ -236,8 +236,8 @@
 	"Sources/Methods/xmldsig_sign_6.4dm": {
 		"left": 258,
 		"top": 204,
-		"width": 948,
-		"height": 724
+		"width": 604,
+		"height": 758
 	},
 	"Trash/Methods/(verify3).4dm": {
 		"left": 480,

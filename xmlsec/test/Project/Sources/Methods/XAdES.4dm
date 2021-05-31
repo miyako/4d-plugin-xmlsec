@@ -175,14 +175,17 @@ If (False:C215)
 	
 End if 
 
-$counterSignature:=New collection:C1472
-$counterSignature[0]:=New object:C1471  //ds:Signature
-
 If (False:C215)
+	
+	$unsignedSignatureProperties:=New object:C1471
 	
 	  //not implemented
 	
-	$unsignedSignatureProperties:=New object:C1471
+	$signatureTimeStamp:=New collection:C1472
+	$signatureTimeStamp[0]:=New object:C1471
+	
+	$counterSignature:=New collection:C1472
+	$counterSignature[0]:=New object:C1471  //ds:Signature
 	
 	$unsignedProperties:=New object:C1471
 	$unsignedProperties.unsignedSignatureProperties:=$unsignedSignatureProperties
@@ -192,23 +195,33 @@ If (False:C215)
 	$completeCertificateRefs[0].certRefs:=New collection:C1472
 	
 	$completeRevocationRefs:=New collection:C1472
-	$sigAndRefsTimeStamp:=New object:C1471
-	$refsOnlyTimeStamp:=New object:C1471
+	$completeRevocationRefs[0]:=New object:C1471
+	
+	$sigAndRefsTimeStamp:=New collection:C1472
+	$sigAndRefsTimeStamp[0]:=New object:C1471
+	
+	$refsOnlyTimeStamp:=New collection:C1472
+	$refsOnlyTimeStamp[0]:=New object:C1471
 	
 	$certificateValues:=New collection:C1472
+	$certificateValues[0]:=New object:C1471
+	
 	$revocationValues:=New collection:C1472
+	$revocationValues[0]:=New object:C1471
+	
 	$archiveTimeStamp:=New collection:C1472
+	$archiveTimeStamp[0]:=New object:C1471
 	
 	  //xsd:sequence
+	$unsignedSignatureProperties.signatureTimeStamp:=$signatureTimeStamp
 	$unsignedSignatureProperties.counterSignature:=$counterSignature
-	$unsignedSignatureProperties.signatureTimeStamp:=""
 	$unsignedSignatureProperties.completeCertificateRefs:=$completeCertificateRefs
 	$unsignedSignatureProperties.completeRevocationRefs:=$completeRevocationRefs
-	$unsignedSignatureProperties.sigAndRefsTimeStamp:=$sigAndRefsTimeStamp
-	$unsignedSignatureProperties.refsOnlyTimeStamp:=$refsOnlyTimeStamp
 	$unsignedSignatureProperties.certificateValues:=$certificateValues
 	$unsignedSignatureProperties.revocationValues:=$revocationValues
 	$unsignedSignatureProperties.archiveTimeStamp:=$archiveTimeStamp
+	$unsignedSignatureProperties.sigAndRefsTimeStamp:=$sigAndRefsTimeStamp
+	$unsignedSignatureProperties.refsOnlyTimeStamp:=$refsOnlyTimeStamp
 	
 End if 
 
