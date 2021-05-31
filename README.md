@@ -12,7 +12,7 @@ XML signature based on [xmlsec](https://www.aleksey.com/xmlsec/).
 
 ## OpenSSL tips
 
-* https://www.ssl.com/how-to/export-certificates-private-key-from-pkcs12-file-with-openssl/#ftoc-heading-5
+* https://www.ssl.com/how-to/export-certificates-private-key-from-pkcs12-file-with-openssl/
 
 the plugin accepts P12 or PEM/DER, but you can convert keys and certificates from one format to another.
 
