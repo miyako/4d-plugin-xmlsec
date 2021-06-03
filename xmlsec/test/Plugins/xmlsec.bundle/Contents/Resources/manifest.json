@@ -4,7 +4,12 @@
     "commands": [
         {
             "theme": "xmlsec",
-            "syntax": "xmlsec sign(&J;&O;&Y;&O):J",
+            "syntax": "xmlsec sign(&J;&O;&Y):J",
+            "threadSafe": true
+        },
+        {
+            "theme": "xmlsec",
+            "syntax": "xmlsec hash(&O;&T):T",
             "threadSafe": true
         }
     ]

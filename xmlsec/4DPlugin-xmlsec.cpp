@@ -70,15 +70,9 @@ void PluginMain(PA_long32 selector, PA_PluginParameters params) {
 				xmlsec_sign(params);
 				break;
 			case 2 :
-				xmlsec_verify(params);
+                xmlsec_hash(params);
 				break;
-			case 3 :
-				xmlsec_encrypt(params);
-				break;
-			case 4 :
-				xmlsec_decrypt(params);
-				break;
-
+                
         }
 
 	}
@@ -649,7 +643,6 @@ static xmlNodePtr loadCerts(PA_ObjectRef options,
             for(PA_ulong32 i = 1; i <= PA_GetArrayNbElements(Param3); ++i) {
                           
                 PA_Blob blob = PA_GetBlobInArray(Param3, i);
-                
                 PA_Handle h = blob.fHandle;
                 
                 if(h) {
@@ -686,8 +679,7 @@ static xmlNodePtr loadCerts(PA_ObjectRef options,
         if(keyInfoNode) {
 
             if(keyName.length()){
-                xmlSecKeySetName(key, BAD_CAST keyName.c_str());
-//                xmlSecTmplKeyInfoAddKeyName(keyInfoNode, BAD_CAST keyName.c_str());
+                xmlSecTmplKeyInfoAddKeyName(keyInfoNode, BAD_CAST keyName.c_str());
             }
             
             if(!keyValueNode) {
@@ -1106,10 +1098,11 @@ static void putXades(PA_ObjectRef options,
                      xmlNodePtr signNode,
                      xmlSecTransformId digestMethod,
                      C_BLOB& Param2,
-                     PA_Variable Param3,
-                     C_BLOB& Param4) {
+                     PA_Variable Param3) {
     
     xmlString reference_id;
+    
+    xmlSecTransformId policyDigestMethod = xmlSecTransformSha1Id;
     
     xmlNsPtr dsNs = NULL;
     
@@ -1119,6 +1112,8 @@ static void putXades(PA_ObjectRef options,
         xmlString xades_ns = BAD_CAST"xades";
         
         if(options) {
+            
+            policyDigestMethod = getDigestMethod(options, L"digest");
             
             CUTF8String textValue;
                         
@@ -1149,7 +1144,7 @@ static void putXades(PA_ObjectRef options,
                 if(ob_get_s(xades, L"ns", &textValue)) {
                     xades_ns = BAD_CAST textValue.c_str();
                 }
-                
+ 
 #pragma mark QualifyingProperties
                 
                 PA_ObjectRef qualifyingProperties = ob_get_o(xades, L"qualifyingProperties");
@@ -1292,6 +1287,20 @@ static void putXades(PA_ObjectRef options,
                                                                 xmlAddChild(signaturePolicyIdNode, sigPolicyIdNode);
                                                                 xmlNodePtr identifierNode = xmlNewNode(xadesNs, BAD_CAST "Identifier");
                                                                 xmlAddChild(sigPolicyIdNode, identifierNode);
+                                                                
+                                                                if(ob_get_s(sigPolicyId, L"digest", &textValue)) {
+                                                                    if(textValue.length()) {
+                                                                        xmlNodePtr sigPolicyHashNode = xmlNewNode(xadesNs, BAD_CAST "SigPolicyHash");
+                                                                        xmlAddChild(signaturePolicyIdNode, sigPolicyHashNode);
+                                                                        xmlNodePtr digestMethodNode = xmlNewNode(dsNs, BAD_CAST "DigestMethod");
+                                                                        xmlNodePtr digestValueNode = xmlNewNode(dsNs, BAD_CAST "DigestValue");
+                                                                        xmlAddChild(sigPolicyHashNode, digestMethodNode);
+                                                                        xmlAddChild(sigPolicyHashNode, digestValueNode);
+                                                                        xmlSetProp(digestMethodNode, BAD_CAST "Algorithm", policyDigestMethod->name);
+                                                                        xmlNodeSetContent(digestValueNode, BAD_CAST textValue.c_str());
+                                                                    }
+                                                                }
+                                                                
                                                                 xmlNodeSetContent(identifierNode, identifier.c_str());
                                                                 if(ob_get_s(sigPolicyId, L"description", &textValue)) {
                                                                     if(textValue.length()) {
@@ -1303,43 +1312,34 @@ static void putXades(PA_ObjectRef options,
                                                                 
                                                                 PA_CollectionRef documentationReferences = ob_get_c(sigPolicyId, L"documentationReferences");
                                                                 if(documentationReferences){
-                                                                    xmlNodePtr documentationReferencesNode = xmlNewNode(xadesNs, BAD_CAST "DocumentationReferences");
-                                                                    xmlAddChild(sigPolicyIdNode, documentationReferencesNode);
-                                                                    for(PA_ulong32 ii = 0; ii < PA_GetCollectionLength(signaturePolicyId); ++ii) {
-                                                                        PA_Variable vv = PA_GetCollectionElement(signaturePolicyId, ii);
-                                                                        if(PA_GetVariableKind(vv) == eVK_Object) {
-                                                                            PA_ObjectRef oo = PA_GetObjectVariable(vv);
-                                                                            if(oo) {
-                                                                                if(ob_get_s(oo, L"documentationReference", &textValue)) {
-                                                                                    if(textValue.length()) {
-                                                                                        xmlNodePtr documentationReferenceNode = xmlNewNode(xadesNs, BAD_CAST "DocumentationReference");
-                                                                                        xmlAddChild(documentationReferencesNode, documentationReferenceNode);
-                                                                                        xmlNodeSetContent(documentationReferenceNode, BAD_CAST textValue.c_str());
+                                                                    if(PA_GetCollectionLength(documentationReferences)) {
+                                                                        xmlNodePtr documentationReferencesNode = xmlNewNode(xadesNs, BAD_CAST "DocumentationReferences");
+                                                                        xmlAddChild(sigPolicyIdNode, documentationReferencesNode);
+                                                                        for(PA_ulong32 ii = 0; ii < PA_GetCollectionLength(documentationReferences); ++ii) {
+                                                                            PA_Variable vv = PA_GetCollectionElement(documentationReferences, ii);
+                                                                            if(PA_GetVariableKind(vv) == eVK_Object) {
+                                                                                PA_ObjectRef oo = PA_GetObjectVariable(vv);
+                                                                                if(oo) {
+                                                                                    PA_CollectionRef documentationReference = ob_get_c(oo, L"documentationReference");
+                                                                                    if(documentationReference){
+                                                                                        for(PA_ulong32 iii = 0; iii < PA_GetCollectionLength(documentationReference); ++iii) {
+                                                                                            PA_Variable vvv = PA_GetCollectionElement(documentationReference, iii);
+                                                                                            if(PA_GetVariableKind(vvv) == eVK_Unistring) {
+                                                                                                PA_Unistring ustr = PA_GetStringVariable(vvv);
+                                                                                                C_TEXT t;
+                                                                                                t.setUTF16String(&ustr);
+                                                                                                CUTF8String u8;
+                                                                                                t.copyUTF8String(&u8);
+                                                                                                xmlNodePtr documentationReferenceNode = xmlNewNode(xadesNs, BAD_CAST "DocumentationReference");
+                                                                                                xmlAddChild(documentationReferencesNode, documentationReferenceNode);
+                                                                                                xmlNodeSetContent(documentationReferenceNode, BAD_CAST u8.c_str());
+                                                                                            }
+                                                                                        }
                                                                                     }
                                                                                 }
                                                                             }
                                                                         }
                                                                     }
-                                                                }
-
-                                                                if(Param4.getBytesLength()) {
-                                                                    void *p = (void *)Param4.getBytesPtr();
-                                                                    PA_long32 size = Param4.getBytesLength();
-                                                                    
-                                                                    xmlNodePtr sigPolicyHashNode = xmlNewNode(xadesNs, BAD_CAST "SigPolicyHash");
-                                                                    
-                                                                    xmlAddChild(signaturePolicyIdNode, sigPolicyHashNode);
-                                                    
-                                                                    xmlString hash;
-                                                                    
-                                                                    getHash(p, size, hash, xmlSecTransformSha1Id);
-                                                                    
-                                                                    xmlNodePtr digestMethodNode = xmlNewNode(dsNs, BAD_CAST "DigestMethod");
-                                                                    xmlNodePtr digestValueNode = xmlNewNode(dsNs, BAD_CAST "DigestValue");
-                                                                    xmlAddChild(sigPolicyHashNode, digestMethodNode);
-                                                                    xmlAddChild(sigPolicyHashNode, digestValueNode);
-                                                                    xmlSetProp(digestMethodNode, BAD_CAST "Algorithm", xmlSecTransformSha1Id->name);
-                                                                    xmlNodeSetContent(digestValueNode, BAD_CAST hash.c_str());
                                                                 }
                                                             }
                                                         }
@@ -1786,10 +1786,7 @@ static void doIt(PA_PluginParameters params,
     Param2.fromParamAtIndex(pParams, 2);//key
 
     PA_Variable Param3 = PA_GetVariableParameter(params, 3);//cert[]
-    
-    C_BLOB Param4;
-    Param4.fromParamAtIndex(pParams, 4);//policy
-    
+        
     xsltSecurityPrefsPtr xsltSecPrefs = createSecurityPrefs();
     
     if(xmlSecCryptoAppInit(NULL) == 0) {
@@ -1859,7 +1856,7 @@ static void doIt(PA_PluginParameters params,
                                 if(xmlSecCryptoAppDefaultKeysMngrInit(keysMngr) == 0) {
                                     
                                     if(Param2.getBytesLength()) {
-                                        
+
                                         secKey = loadKey(options, Param2, keyFmt);
                                         
                                         if(secKey) {
@@ -1877,7 +1874,7 @@ static void doIt(PA_PluginParameters params,
                                            
                                     }
                                     
-                                    putXades(options, doc, signNode, digestMethod, Param2, Param3, Param4);
+                                    putXades(options, doc, signNode, digestMethod, Param2, Param3);
 
                                     switch (command) {
                                         case xmlsec_command_sign:
@@ -1951,12 +1948,51 @@ void xmlsec_verify(PA_PluginParameters params) {
     
 }
 
-void xmlsec_encrypt(PA_PluginParameters params) {
+void xmlsec_hash(PA_PluginParameters params) {
 
-}
+    sLONG_PTR *pResult = (sLONG_PTR *)params->fResult;
+    PackagePtr pParams = (PackagePtr)params->fParameters;
 
-void xmlsec_decrypt(PA_PluginParameters params) {
-
+    C_BLOB Param1;
+    C_TEXT Param2;
+    C_TEXT returnValue;
+    
+    Param2.fromParamAtIndex(pParams, 2);
+    
+    CUTF8String pdm;
+    Param2.copyUTF8String(&pdm);
+    
+    xmlSecTransformId policyDigestMethod = xmlSecTransformSha1Id;
+    
+    if(pdm == (const uint8_t *) "sha224") {
+        policyDigestMethod = xmlSecTransformSha224Id;
+    }
+    
+    if(pdm == (const uint8_t *) "sha256") {
+        policyDigestMethod = xmlSecTransformSha256Id;
+    }
+    
+    if(pdm == (const uint8_t *) "sha384") {
+        policyDigestMethod = xmlSecTransformSha384Id;
+    }
+    
+    if(pdm == (const uint8_t *) "sha512") {
+        policyDigestMethod = xmlSecTransformSha512Id;
+    }
+    
+    Param1.fromParamAtIndex(pParams, 1);
+    
+    void *p = (void *)Param1.getBytesPtr();
+    PA_long32 size = Param1.getBytesLength();
+    
+    xmlString hash;
+    
+    getHash(p, size, hash, policyDigestMethod);
+    
+    CUTF8String u8((const uint8_t *)hash.c_str(), hash.length());
+    returnValue.setUTF8String(&u8);
+    
+    returnValue.setReturn(pResult);
 }
 
 #pragma mark base64

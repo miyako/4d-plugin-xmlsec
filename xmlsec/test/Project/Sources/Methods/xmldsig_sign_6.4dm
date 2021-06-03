@@ -73,6 +73,8 @@ $policyBLOB:=$policy.getContent()
   //default XAdES options
 
 $params.xades:=XAdES 
+$params.xades.digest:="sha512"  //policy digest algorithm
+$policyDigest:=xmlsec hash ($policyBLOB;$params.xades.digest)
 
   //KeyInfo
 $key_id:="keyInfo-"+generate_lowercase_uuid 
@@ -88,8 +90,9 @@ $params.xades.qualifyingProperties.signedProperties.signedDataObjectProperties.d
 $params.xades.qualifyingProperties.signedProperties.signedSignatureProperties.signerRole.claimedRoles[0].claimedRole:="emisor"
 $params.xades.qualifyingProperties.signedProperties.signedSignatureProperties.signingTime:=$signingTime
 $params.xades.qualifyingProperties.signedProperties.signedSignatureProperties.signaturePolicyIdentifer.signaturePolicyId[0].sigPolicyId.identifier:="http://www.facturae.es/politica_de_firma_formato_facturae/politica_de_firma_formato_facturae_v3_1.pdf"
+$params.xades.qualifyingProperties.signedProperties.signedSignatureProperties.signaturePolicyIdentifer.signaturePolicyId[0].sigPolicyId.digest:=$policyDigest
 
-$status:=xmlsec sign ($params;$keyBLOB;$certBLOBs;$policyBLOB)
+$status:=xmlsec sign ($params;$keyBLOB;$certBLOBs)
 
 ASSERT:C1129($status.success)
 

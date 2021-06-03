@@ -124,6 +124,8 @@ static const unsigned char pr2six[256] = {
 
 static const char basis_64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 static void xmlsec_sign(PA_PluginParameters params);
+static void xmlsec_hash(PA_PluginParameters params);
+
 static void xmlsec_verify(PA_PluginParameters params);
 static void xmlsec_encrypt(PA_PluginParameters params);
 static void xmlsec_decrypt(PA_PluginParameters params);

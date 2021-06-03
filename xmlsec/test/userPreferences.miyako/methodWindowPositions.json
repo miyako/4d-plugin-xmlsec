@@ -192,8 +192,8 @@
 		"height": 547
 	},
 	"Sources/Methods/XAdES.4dm": {
-		"left": 209,
-		"top": 210,
+		"left": 163,
+		"top": 172,
 		"width": 927,
 		"height": 745
 	},
@@ -235,9 +235,9 @@
 	},
 	"Sources/Methods/xmldsig_sign_6.4dm": {
 		"left": 258,
-		"top": 204,
-		"width": 604,
-		"height": 758
+		"top": 266,
+		"width": 929,
+		"height": 688
 	},
 	"Trash/Methods/(verify3).4dm": {
 		"left": 480,
@@ -276,9 +276,9 @@
 		"height": 801
 	},
 	"Sources/Methods/xmldsig_sign_7.4dm": {
-		"left": 258,
-		"top": 204,
-		"width": 948,
-		"height": 724
+		"left": 1074,
+		"top": 127,
+		"width": 676,
+		"height": 831
 	}
 }

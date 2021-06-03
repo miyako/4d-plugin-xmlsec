@@ -2,10 +2,10 @@
 	"editors": [
 		{
 			"type": "method",
-			"id": 2147483642,
+			"id": 2147483636,
 			"codeDescriptor": {
 				"type": 1,
-				"methodName": "XAdES"
+				"methodName": "xmldsig_sign_7"
 			}
 		},
 		{
@@ -17,12 +17,7 @@
 			}
 		},
 		{
-			"type": "method",
-			"id": 2147483631,
-			"codeDescriptor": {
-				"type": 1,
-				"methodName": "xmldsig_sign_1"
-			}
+			"type": "explorer"
 		}
 	]
 }

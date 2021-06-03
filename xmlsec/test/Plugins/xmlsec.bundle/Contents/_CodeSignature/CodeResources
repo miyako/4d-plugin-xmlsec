@@ -8,7 +8,7 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			ed3o7iVk6TnqFqVOO5/tUJtLhCs=
+			/Zxk+Zy5UHNzgk6ao+c+ZEd3wB4=
 			</data>
 			<key>optional</key>
 			<true/>
@@ -19,7 +19,7 @@
 		</data>
 		<key>Resources/manifest.json</key>
 		<data>
-		LjQwJezvMa/RoqeHFE7KjdWPkTk=
+		r9WGq7NEr347NMNFlBFwbTTOPjI=
 		</data>
 	</dict>
 	<key>files2</key>
@@ -35,7 +35,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			O3vF+ykbZRLaTPqhPc9q9n+Iwm7FR0pzfe+CN0mrceE=
+			0pkkPC4S4lLu/gqcZ+wWYAjH70HqWo8WlRxoE8tfWTk=
 			</data>
 			<key>optional</key>
 			<true/>
@@ -51,14 +51,14 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			Wx9B08zz/55rIy5IlboZf3HCNJGQTmYYuaXqxJlqNAc=
+			kHw9wfqf8st/0bJwXEqVSMeKV0xd4JVqRDpM7yDJ9rw=
 			</data>
 		</dict>
 		<key>Windows64/xmlsec.4DX</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			zpLku5TBKMbSOF4i1K/zPtaN+pepENTBjnnUAqjwOPE=
+			gJeVRqwD10+Uu8DO9gEOTKu5ZeP9PeRklO66Sk8khFo=
 			</data>
 		</dict>
 	</dict>

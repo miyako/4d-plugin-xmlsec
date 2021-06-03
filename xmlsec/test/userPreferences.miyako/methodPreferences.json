@@ -245,8 +245,8 @@
 	"Sources/Methods/XAdES.4dm": {
 		"startSelection": 0,
 		"endSelection": 0,
-		"firstSelectedLine": 212,
-		"lastSelectedLine": 212,
+		"firstSelectedLine": 38,
+		"lastSelectedLine": 38,
 		"folding": [],
 		"bookmarks": [],
 		"stamp": "2021-05-31T02:54:56.565Z"
@@ -279,8 +279,8 @@
 		"stamp": "2021-05-31T01:14:34.946Z"
 	},
 	"Sources/Methods/xmldsig_sign_3.4dm": {
-		"startSelection": 32,
-		"endSelection": 32,
+		"startSelection": 30,
+		"endSelection": 30,
 		"firstSelectedLine": 25,
 		"lastSelectedLine": 25,
 		"folding": [],
@@ -288,39 +288,39 @@
 		"stamp": "2021-05-29T16:45:10.413Z"
 	},
 	"Sources/Methods/xmldsig_sign_4.4dm": {
-		"startSelection": 26,
-		"endSelection": 26,
-		"firstSelectedLine": 24,
-		"lastSelectedLine": 24,
+		"startSelection": 0,
+		"endSelection": 0,
+		"firstSelectedLine": 37,
+		"lastSelectedLine": 37,
 		"folding": [],
 		"bookmarks": [],
 		"stamp": "2021-05-29T16:44:49.417Z"
 	},
 	"Sources/Methods/xmldsig_sign_6.4dm": {
-		"startSelection": 17,
-		"endSelection": 17,
-		"firstSelectedLine": 73,
-		"lastSelectedLine": 73,
+		"startSelection": 0,
+		"endSelection": 0,
+		"firstSelectedLine": 91,
+		"lastSelectedLine": 92,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-31T01:19:13.242Z"
+		"stamp": "2021-06-03T13:36:55.064Z"
 	},
 	"Sources/Methods/xmldsig_sign_5.4dm": {
-		"startSelection": 35,
+		"startSelection": 0,
 		"endSelection": 0,
-		"firstSelectedLine": 36,
-		"lastSelectedLine": 33,
+		"firstSelectedLine": 21,
+		"lastSelectedLine": 21,
 		"folding": [],
 		"bookmarks": [],
 		"stamp": "2021-05-30T00:31:34.723Z"
 	},
 	"Sources/Methods/xmldsig_sign_7.4dm": {
-		"startSelection": 16,
-		"endSelection": 22,
-		"firstSelectedLine": 23,
-		"lastSelectedLine": 23,
+		"startSelection": 39,
+		"endSelection": 49,
+		"firstSelectedLine": 70,
+		"lastSelectedLine": 70,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-05-30T07:12:58.380Z"
+		"stamp": "2021-06-03T14:10:09.648Z"
 	}
 }
