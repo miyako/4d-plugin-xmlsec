@@ -1036,9 +1036,21 @@ static bool getIssuerPEM(PA_ObjectRef options,
     return success;
 }
 
+static void getBn(const BIGNUM *n, xmlString& value){
+    
+    if(n){
+        size_t nsize = BN_num_bytes(n);
+        std::vector<unsigned char *>buf(nsize + 1);
+        size_t len = BN_bn2bin(n, (unsigned char *)&buf[0]);
+        if(0 < len){
+            value = BAD_CAST base64_encode((const unsigned char *)&buf[0], len).c_str();
+        }
+    }
+}
+
 static bool getIssuerP12(PA_ObjectRef options,
                          C_BLOB& Param2, xmlSecTransformId digestMethod,
-                         xmlString& hash, xmlString& issuerName, xmlString& serialNumber){
+                         xmlString& hash, xmlString& issuerName, xmlString& serialNumber, xmlNodePtr keyInfoNode, xmlNsPtr dsNs){
  
     bool success = false;
     
@@ -1073,6 +1085,31 @@ static bool getIssuerP12(PA_ObjectRef options,
             success = true;
             BIO_free(bio);
         }
+        
+        if(keyInfoNode){
+            if(key){
+                const RSA *r = EVP_PKEY_get0_RSA(key);
+                if(r){
+                    const BIGNUM *n = NULL, *e = NULL, *d = NULL;
+                    RSA_get0_key(r, &n, &e, &d);
+                    if(n){
+                        xmlString modulus, exponent;
+                        getBn(n, modulus);
+                        
+                        xmlNodePtr modulusNode = xmlNewNode(dsNs, BAD_CAST "Modulus");
+                        xmlAddChild(keyInfoNode, modulusNode);
+                        xmlNodeSetContent(modulusNode, modulus.c_str());
+                        
+                        getBn(e, exponent);
+                        xmlNodePtr exponentNode = xmlNewNode(dsNs, BAD_CAST "Exponent");
+                        xmlAddChild(keyInfoNode, exponentNode);
+                        xmlNodeSetContent(exponentNode, exponent.c_str());
+                        
+                    }
+                }
+            }
+        }
+
     }
     
     return success;
@@ -1081,12 +1118,12 @@ static bool getIssuerP12(PA_ObjectRef options,
 static bool getIssuer(PA_ObjectRef options,
                       C_BLOB& Param2,
                       PA_Variable Param3,
-                      xmlSecTransformId digestMethod, xmlString& hash, xmlString& issuerName, xmlString& serialNumber){
+                      xmlSecTransformId digestMethod, xmlString& hash, xmlString& issuerName, xmlString& serialNumber, xmlNodePtr keyInfoNode, xmlNsPtr dsNs){
     
     xmlSecKeyDataFormat keyFmt = getFmt(options, L"key");
             
     if(keyFmt == xmlSecKeyDataFormatPkcs12) {
-        return getIssuerP12(options, Param2, digestMethod, hash, issuerName, serialNumber);
+        return getIssuerP12(options, Param2, digestMethod, hash, issuerName, serialNumber, keyInfoNode, dsNs);
     }else{
         return getIssuerPEM(options, Param3, digestMethod, hash, issuerName, serialNumber);
     }
@@ -1098,7 +1135,8 @@ static void putXades(PA_ObjectRef options,
                      xmlNodePtr signNode,
                      xmlSecTransformId digestMethod,
                      C_BLOB& Param2,
-                     PA_Variable Param3) {
+                     PA_Variable Param3,
+                     xmlNodePtr keyInfoNode) {
     
     xmlString reference_id;
     
@@ -1219,7 +1257,7 @@ static void putXades(PA_ObjectRef options,
 
                                     xmlString hash, issuerName, serialNumber;
               
-                                    if(getIssuer(options, Param2, Param3, digestMethod, hash, issuerName, serialNumber)){
+                                    if(getIssuer(options, Param2, Param3, digestMethod, hash, issuerName, serialNumber, keyInfoNode, dsNs)){
                                         
                                         xmlNodePtr signingCertificateNode = xmlNewNode(xadesNs, BAD_CAST "SigningCertificate");
                                         xmlAddChild(signedSignaturePropertiesNode, signingCertificateNode);
@@ -1855,6 +1893,8 @@ static void doIt(PA_PluginParameters params,
                                 
                                 if(xmlSecCryptoAppDefaultKeysMngrInit(keysMngr) == 0) {
                                     
+                                    xmlNodePtr keyInfoNode = NULL;
+                                    
                                     if(Param2.getBytesLength()) {
 
                                         secKey = loadKey(options, Param2, keyFmt);
@@ -1870,11 +1910,11 @@ static void doIt(PA_PluginParameters params,
                                             ob_set_s(status, L"error", (const char *)"failed:xmlSecCryptoAppKeyLoadMemory");
                                         }
 
-                                        loadCerts(options, signNode, digestMethod, secKey, keyFmt, crtFmt, Param3);
+                                        keyInfoNode = loadCerts(options, signNode, digestMethod, secKey, keyFmt, crtFmt, Param3);
                                            
                                     }
                                     
-                                    putXades(options, doc, signNode, digestMethod, Param2, Param3);
+                                    putXades(options, doc, signNode, digestMethod, Param2, Param3, keyInfoNode);
 
                                     switch (command) {
                                         case xmlsec_command_sign:

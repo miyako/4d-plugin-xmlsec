@@ -315,10 +315,10 @@
 		"stamp": "2021-05-30T00:31:34.723Z"
 	},
 	"Sources/Methods/xmldsig_sign_7.4dm": {
-		"startSelection": 39,
-		"endSelection": 49,
-		"firstSelectedLine": 70,
-		"lastSelectedLine": 70,
+		"startSelection": 0,
+		"endSelection": 0,
+		"firstSelectedLine": 38,
+		"lastSelectedLine": 38,
 		"folding": [],
 		"bookmarks": [],
 		"stamp": "2021-06-03T14:10:09.648Z"

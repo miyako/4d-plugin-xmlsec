@@ -49,6 +49,7 @@
 #include "libxslt/xslt.h"
 #include "libxslt/security.h"
 
+#include "openssl/rsa.h"
 #include "openssl/pkcs12.h"
 
 #include "C_TEXT.h"
