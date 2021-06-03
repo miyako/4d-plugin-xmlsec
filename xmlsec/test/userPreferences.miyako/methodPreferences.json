@@ -297,13 +297,13 @@
 		"stamp": "2021-05-29T16:44:49.417Z"
 	},
 	"Sources/Methods/xmldsig_sign_6.4dm": {
-		"startSelection": 0,
-		"endSelection": 0,
-		"firstSelectedLine": 91,
-		"lastSelectedLine": 92,
+		"startSelection": 29,
+		"endSelection": 29,
+		"firstSelectedLine": 74,
+		"lastSelectedLine": 74,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-06-03T13:36:55.064Z"
+		"stamp": "2021-06-03T17:20:26.612Z"
 	},
 	"Sources/Methods/xmldsig_sign_5.4dm": {
 		"startSelection": 0,
@@ -317,10 +317,10 @@
 	"Sources/Methods/xmldsig_sign_7.4dm": {
 		"startSelection": 0,
 		"endSelection": 0,
-		"firstSelectedLine": 38,
-		"lastSelectedLine": 38,
+		"firstSelectedLine": 10,
+		"lastSelectedLine": 10,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-06-03T14:10:09.648Z"
+		"stamp": "2021-06-03T17:09:33.040Z"
 	}
 }

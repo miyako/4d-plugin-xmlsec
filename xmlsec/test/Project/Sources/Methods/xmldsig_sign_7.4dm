@@ -50,7 +50,7 @@ $policyBLOB:=$policy.getContent()
   //default XAdES options
 
 $params.xades:=XAdES 
-$params.xades.digest:="sha512"  //policy digest algorithm
+$params.xades.digest:="sha256"  //policy digest algorithm
 $policyDigest:=xmlsec hash ($policyBLOB;$params.xades.digest)
 
   //KeyInfo
