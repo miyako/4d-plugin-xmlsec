@@ -338,6 +338,8 @@ static xmlSecTransformId getDigestMethod(PA_ObjectRef xmldsig, const wchar_t *ke
             
         }
     }
+    
+    return xmlSecTransformSha1Id;
 }
 
 static xmlSecTransformId getOptionDigestMethod(PA_ObjectRef options, const wchar_t *key) {
@@ -693,11 +695,6 @@ static xmlNodePtr loadCerts(PA_ObjectRef options,
                 xmlSecTmplKeyInfoAddKeyName(keyInfoNode, BAD_CAST keyName.c_str());
             }
             
-            if(!keyValueNode) {
-//                if(with_keyValue){
-                    keyValueNode = xmlSecTmplKeyInfoAddKeyValue(keyInfoNode);
-//                }
-            }
         }
         
         x509DataNode = xmlSecTmplKeyInfoAddX509Data(keyInfoNode);
@@ -724,6 +721,8 @@ static xmlNodePtr loadCerts(PA_ObjectRef options,
                 xmlNodePtr crlNode = xmlSecTmplX509DataAddCRL(x509DataNode);
             }
         }
+        
+        keyValueNode = xmlSecTmplKeyInfoAddKeyValue(keyInfoNode);
   
     }
      
@@ -1112,7 +1111,7 @@ static bool getIssuerP12(PA_ObjectRef options,
                         xmlNodePtr modulusNode = xmlNewNode(dsNs, BAD_CAST "Modulus");
                         xmlAddChild(RSAKeyValueNode, modulusNode);
                         xmlNodeSetContent(modulusNode, modulus.c_str());
-//
+
                         getBn(e, exponent);
                         xmlNodePtr exponentNode = xmlNewNode(dsNs, BAD_CAST "Exponent");
                         xmlAddChild(RSAKeyValueNode, exponentNode);

@@ -1,1 +1,16 @@
-﻿[]
+﻿[
+	{
+		"line": 3,
+		"method": {
+			"type": 1,
+			"methodName": "TEST"
+		}
+	},
+	{
+		"line": 2,
+		"method": {
+			"type": 1,
+			"methodName": "TEST"
+		}
+	}
+]

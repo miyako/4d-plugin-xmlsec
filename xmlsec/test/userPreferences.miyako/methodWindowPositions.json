@@ -204,10 +204,10 @@
 		"height": 904
 	},
 	"Trash/Methods/(TEST).4dm": {
-		"left": 466,
-		"top": 437,
-		"width": 877,
-		"height": 417
+		"left": 1343,
+		"top": 167,
+		"width": 685,
+		"height": 831
 	},
 	"Sources/Methods/xmldsig_sign_2.4dm": {
 		"left": 995,
@@ -234,8 +234,8 @@
 		"height": 637
 	},
 	"Sources/Methods/xmldsig_sign_6.4dm": {
-		"left": 258,
-		"top": 266,
+		"left": 496,
+		"top": 364,
 		"width": 929,
 		"height": 688
 	},
@@ -278,7 +278,7 @@
 	"Sources/Methods/xmldsig_sign_7.4dm": {
 		"left": 1343,
 		"top": 167,
-		"width": 676,
+		"width": 685,
 		"height": 831
 	}
 }

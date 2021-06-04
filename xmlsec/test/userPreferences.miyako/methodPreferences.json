@@ -297,13 +297,13 @@
 		"stamp": "2021-05-29T16:44:49.417Z"
 	},
 	"Sources/Methods/xmldsig_sign_6.4dm": {
-		"startSelection": 29,
-		"endSelection": 29,
-		"firstSelectedLine": 74,
-		"lastSelectedLine": 74,
+		"startSelection": 100,
+		"endSelection": 100,
+		"firstSelectedLine": 68,
+		"lastSelectedLine": 68,
 		"folding": [],
 		"bookmarks": [],
-		"stamp": "2021-06-03T17:20:26.612Z"
+		"stamp": "2021-06-04T08:39:28.008Z"
 	},
 	"Sources/Methods/xmldsig_sign_5.4dm": {
 		"startSelection": 0,

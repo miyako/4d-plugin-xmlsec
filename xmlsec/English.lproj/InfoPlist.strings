@@ -1,1 +1,1 @@
-/* Localized versions of Info.plist keys */CFBundleName = "xmlsec";CFBundleShortVersionString = "0.10.2";CFBundleGetInfoString = "xmlsec version 0.10.22, Copyright 2021 miyako.";
+/* Localized versions of Info.plist keys */CFBundleName = "xmlsec";CFBundleShortVersionString = "0.10.3";CFBundleGetInfoString = "xmlsec version 0.10.3, Copyright 2021 miyako.";
