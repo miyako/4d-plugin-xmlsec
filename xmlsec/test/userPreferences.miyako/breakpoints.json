@@ -1,16 +1,9 @@
 ﻿[
 	{
-		"line": 3,
+		"line": 31,
 		"method": {
 			"type": 1,
-			"methodName": "TEST"
-		}
-	},
-	{
-		"line": 2,
-		"method": {
-			"type": 1,
-			"methodName": "TEST"
+			"methodName": "cert_test"
 		}
 	}
 ]

@@ -234,8 +234,8 @@
 		"height": 637
 	},
 	"Sources/Methods/xmldsig_sign_6.4dm": {
-		"left": 496,
-		"top": 364,
+		"left": 486,
+		"top": 519,
 		"width": 929,
 		"height": 688
 	},
@@ -276,9 +276,15 @@
 		"height": 801
 	},
 	"Sources/Methods/xmldsig_sign_7.4dm": {
-		"left": 1343,
-		"top": 167,
+		"left": 790,
+		"top": 168,
 		"width": 685,
 		"height": 831
+	},
+	"Sources/Methods/cert_test.4dm": {
+		"left": 756,
+		"top": 298,
+		"width": 929,
+		"height": 688
 	}
 }

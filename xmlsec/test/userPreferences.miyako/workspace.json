@@ -1,23 +1,18 @@
 ﻿{
 	"editors": [
 		{
-			"type": "method",
-			"id": 2147483639,
-			"codeDescriptor": {
-				"type": 1,
-				"methodName": "xmldsig_sign_6"
-			}
-		},
-		{
-			"type": "method",
-			"id": 2147483636,
-			"codeDescriptor": {
-				"type": 1,
-				"methodName": "xmldsig_sign_7"
-			}
-		},
-		{
 			"type": "explorer"
+		},
+		{
+			"type": "method",
+			"id": 2147483630,
+			"codeDescriptor": {
+				"type": 1,
+				"methodName": "cert_test"
+			}
+		},
+		{
+			"type": "toolbox"
 		}
 	]
 }

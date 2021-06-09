@@ -72,7 +72,9 @@ void PluginMain(PA_long32 selector, PA_PluginParameters params) {
 			case 2 :
                 xmlsec_hash(params);
 				break;
-                
+            case 3 :
+                xmlsec_x509(params);
+                break;
         }
 
 	}
@@ -1019,23 +1021,28 @@ static bool getIssuerPEM(PA_ObjectRef options,
                 getHash(p, size, hash, digestMethod);
                 
                 BIO *bio = BIO_new_mem_buf(p, size);
-                X509 *cert = NULL;
                 
-                switch (crtFmt) {
-                    case xmlSecKeyDataFormatPem:
-                    case xmlSecKeyDataFormatCertPem:
-                    case xmlSecKeyDataFormatPkcs8Pem:
-                        cert = PEM_read_bio_X509(bio, NULL, 0, NULL);
-                        break;
-                    default:
-                        cert = d2i_X509_bio(bio, NULL);
-                        break;
-                                                                }
-                if(cert) {
-                    getIssuer(cert, issuerName, serialNumber);
-                    success = true;
+                if(bio)
+                {
+                    X509 *cert = NULL;
+                    
+                    switch (crtFmt) {
+                        case xmlSecKeyDataFormatPem:
+                        case xmlSecKeyDataFormatCertPem:
+                        case xmlSecKeyDataFormatPkcs8Pem:
+                            cert = PEM_read_bio_X509(bio, NULL, 0, NULL);
+                            break;
+                        default:
+                            cert = d2i_X509_bio(bio, NULL);
+                            break;
+                                                                    }
+                    if(cert) {
+                        getIssuer(cert, issuerName, serialNumber);
+                        success = true;
+                    }
+                    
+                    BIO_free(bio);
                 }
-                
                 PA_UnlockHandle(h);
             }
             
@@ -1076,52 +1083,57 @@ static bool getIssuerP12(PA_ObjectRef options,
         
     }
         
-    BIO *bio = BIO_new_mem_buf((void *)Param2.getBytesPtr(), Param2.getBytesLength());
-    PKCS12 *p12 = d2i_PKCS12_bio(bio, NULL);
+    BIO *biop12 = BIO_new_mem_buf((void *)Param2.getBytesPtr(), Param2.getBytesLength());
     
-    EVP_PKEY *key = NULL;
-    X509 *cert = NULL;
-    STACK_OF(X509) *ca = NULL;
-    
-    if(PKCS12_parse(p12, (const char *)password.c_str(), &key, &cert, &ca)){
-        getIssuer(cert, issuerName, serialNumber);
+    if(biop12)
+    {
+        PKCS12 *p12 = d2i_PKCS12_bio(biop12, NULL);
         
-        BIO *bio = BIO_new(BIO_s_mem());
-        if(bio){
-            i2d_X509_bio(bio, cert);
-            char *p = NULL;
-            int size = BIO_get_mem_data(bio, &p);
-            getHash(p, size, hash, digestMethod);
-            success = true;
-            BIO_free(bio);
-        }
+        EVP_PKEY *key = NULL;
+        X509 *cert = NULL;
+        STACK_OF(X509) *ca = NULL;
         
-        if(keyValueNode){
-            if(key){
-                const RSA *r = EVP_PKEY_get0_RSA(key);
-                if(r){
-                    const BIGNUM *n = NULL, *e = NULL, *d = NULL;
-                    RSA_get0_key(r, &n, &e, &d);
-                    if(n){
-                        xmlString modulus, exponent;
-                        getBn(n, modulus);
-                        
-                        xmlNodePtr RSAKeyValueNode = xmlNewNode(dsNs, BAD_CAST "RSAKeyValue");
-                        xmlAddChild(keyValueNode, RSAKeyValueNode);
-                        xmlNodePtr modulusNode = xmlNewNode(dsNs, BAD_CAST "Modulus");
-                        xmlAddChild(RSAKeyValueNode, modulusNode);
-                        xmlNodeSetContent(modulusNode, modulus.c_str());
-
-                        getBn(e, exponent);
-                        xmlNodePtr exponentNode = xmlNewNode(dsNs, BAD_CAST "Exponent");
-                        xmlAddChild(RSAKeyValueNode, exponentNode);
-                        xmlNodeSetContent(exponentNode, exponent.c_str());
-                        
+        if(PKCS12_parse(p12, (const char *)password.c_str(), &key, &cert, &ca)){
+            getIssuer(cert, issuerName, serialNumber);
+            
+            BIO *bio = BIO_new(BIO_s_mem());
+            
+            if(bio){
+                i2d_X509_bio(bio, cert);
+                char *p = NULL;
+                int size = BIO_get_mem_data(bio, &p);
+                getHash(p, size, hash, digestMethod);
+                success = true;
+                BIO_free(bio);
+            }
+            
+            if(keyValueNode){
+                if(key){
+                    const RSA *r = EVP_PKEY_get0_RSA(key);
+                    if(r){
+                        const BIGNUM *n = NULL, *e = NULL, *d = NULL;
+                        RSA_get0_key(r, &n, &e, &d);
+                        if(n){
+                            xmlString modulus, exponent;
+                            getBn(n, modulus);
+                            
+                            xmlNodePtr RSAKeyValueNode = xmlNewNode(dsNs, BAD_CAST "RSAKeyValue");
+                            xmlAddChild(keyValueNode, RSAKeyValueNode);
+                            xmlNodePtr modulusNode = xmlNewNode(dsNs, BAD_CAST "Modulus");
+                            xmlAddChild(RSAKeyValueNode, modulusNode);
+                            xmlNodeSetContent(modulusNode, modulus.c_str());
+                            
+                            getBn(e, exponent);
+                            xmlNodePtr exponentNode = xmlNewNode(dsNs, BAD_CAST "Exponent");
+                            xmlAddChild(RSAKeyValueNode, exponentNode);
+                            xmlNodeSetContent(exponentNode, exponent.c_str());
+                            
+                        }
                     }
                 }
             }
+            BIO_free(biop12);
         }
-
     }
     
     return success;
@@ -2045,6 +2057,103 @@ void xmlsec_hash(PA_PluginParameters params) {
     returnValue.setUTF8String(&u8);
     
     returnValue.setReturn(pResult);
+}
+
+static void setAsn1Time(PA_ObjectRef status, const ASN1_TIME *tm,const wchar_t *key) {
+    
+    if(status) {
+        BIO *bio = BIO_new(BIO_s_mem());
+        if (bio) {
+            if (ASN1_TIME_print(bio, tm)) {
+                std::vector<char>buf(99);//e.g. Feb _3 00:55:52 2015 GMT
+                int write = BIO_read(bio, &buf[0], 98);
+                buf[write]='\0';
+                ob_set_s(status, key, &buf[0]);
+            }
+            BIO_free(bio);
+        }
+    }
+}
+
+void xmlsec_x509(PA_PluginParameters params) {
+    
+    PackagePtr pParams = (PackagePtr)params->fParameters;
+
+    C_BLOB Param1;
+    Param1.fromParamAtIndex(pParams, 1);
+    
+    PA_ObjectRef options = PA_GetObjectParameter(params, 2);
+    PA_ObjectRef status  = PA_CreateObject();
+    ob_set_b(status, L"success", false);
+    
+    xmlSecKeyDataFormat crtFmt = getFmt(options, L"cert");
+    
+    xmlString password;
+    
+    if(options) {
+        
+        CUTF8String textValue;
+        
+        if(ob_get_s(options, L"password", &textValue)) {
+            password = BAD_CAST textValue.c_str();
+        }
+        
+    }
+    
+    BIO *bio = BIO_new_mem_buf((void *)Param1.getBytesPtr(), Param1.getBytesLength());
+    
+    if(bio)
+    {
+        X509 *cert = NULL;
+        
+        switch (crtFmt) {
+            case xmlSecKeyDataFormatPem:
+            case xmlSecKeyDataFormatCertPem:
+            case xmlSecKeyDataFormatPkcs8Pem:
+                cert = PEM_read_bio_X509(bio, NULL, 0, NULL);
+                break;
+            case xmlSecKeyDataFormatPkcs12:
+            {
+                PKCS12 *p12 = d2i_PKCS12_bio(bio, NULL);
+                
+                EVP_PKEY *key = NULL;
+                STACK_OF(X509) *ca = NULL;
+                
+                if(PKCS12_parse(p12, (const char *)password.c_str(), &key, &cert, &ca)){
+                    
+                }
+            }
+                break;
+            default:
+                cert = d2i_X509_bio(bio, NULL);
+                break;
+                                                        }
+        if(cert) {
+            
+            const ASN1_TIME *notBefore = X509_get0_notBefore(cert);
+            const ASN1_TIME *notAfter = X509_get0_notAfter(cert);
+            
+            setAsn1Time(status, notBefore, L"notBefore");
+            setAsn1Time(status, notAfter, L"notAfter");
+            
+            ob_set_b(status, L"success", true);
+            
+            /*
+            BIO *biocert = BIO_new(BIO_s_mem());
+            if(biocert){
+                i2d_X509_bio(biocert, cert);
+                char *p = NULL;
+                int size = BIO_get_mem_data(biocert, &p);
+
+                BIO_free(biocert);
+            }
+            */
+        }
+        
+        BIO_free(bio);
+    }
+    
+    PA_ReturnObject(params, status);
 }
 
 #pragma mark base64

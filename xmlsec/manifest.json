@@ -11,6 +11,11 @@
             "theme": "xmlsec",
             "syntax": "xmlsec hash(&O;&T):T",
             "threadSafe": true
+        },
+        {
+            "theme": "xmlsec",
+            "syntax": "xmlsec x509(&O;&J):J",
+            "threadSafe": true
         }
     ]
 }
