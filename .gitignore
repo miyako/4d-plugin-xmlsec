@@ -1,0 +1,3 @@
+xmlsec/build/*
+xmlsec/test/userPreferences.*
+xmlsec/test/Project/DerivedData/f*
