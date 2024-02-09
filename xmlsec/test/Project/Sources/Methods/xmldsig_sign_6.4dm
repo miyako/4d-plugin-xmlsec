@@ -63,8 +63,12 @@ openssl pkcs12
 
 */
 
+var $keyBLOB : Blob
+
 $key:=Folder:C1567(fk resources folder:K87:11).folder("xades").file("facturae.pem")  //PRIVATE KEY
 $keyBLOB:=$key.getContent()
+
+var $policyBLOB : Blob
 
 //the policy 
 $policy:=Folder:C1567(fk resources folder:K87:11).folder("xades").file("politica_de_firma_formato_facturae_v3_1.pdf")

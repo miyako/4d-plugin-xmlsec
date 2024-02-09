@@ -1,16 +1,5 @@
-﻿{
-	"export_project": {
-		"methods": [
-			"generate_constants_xlf",
-			"generate_file_from_template",
-			"generate_project",
-			"generate_project_infoplist",
-			"generate_project_plugin_stub",
-			"generate_project_source",
-			"generate_project_vs",
-			"generate_project_xcode"
-		]
-	},
+{
+	"(export_project)": {},
 	"xmldsig_sign": {
 		"methods": [
 			"xmldsig_sign_1",
@@ -22,5 +11,9 @@
 			"xmldsig_sign_7"
 		]
 	},
-	"trash": {}
+	"trash": {
+		"groups": [
+			"(export_project)"
+		]
+	}
 }

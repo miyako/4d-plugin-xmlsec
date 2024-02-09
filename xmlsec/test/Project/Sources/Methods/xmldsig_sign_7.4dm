@@ -37,10 +37,16 @@ $params.xml:=$doc.getText()
 $pkcs12key:=Folder:C1567(fk resources folder:K87:11).folder("xades").file("facturae.p12")  //p12=PFX
 $params.key:="pkcs12"  //default:pem, binary, der, pkcs8pem, pkcs8der, pkcs12, pemcert, dercert
 $params.password:="1234"
+
+var $keyBLOB : Blob
+
 $keyBLOB:=$pkcs12key.getContent()
 
 //the policy 
 $policy:=Folder:C1567(fk resources folder:K87:11).folder("xades").file("politica_de_firma_formato_facturae_v3_1.pdf")
+
+var $policyBLOB : Blob
+
 $policyBLOB:=$policy.getContent()
 
 //default XAdES options
