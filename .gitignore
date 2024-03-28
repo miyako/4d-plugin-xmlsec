@@ -1,3 +1,4 @@
 xmlsec/build/*
 xmlsec/test/userPreferences.*
 xmlsec/test/Project/DerivedData/f*
+xmlsec/xmlsec.xcodeproj/project.xcworkspace/xcuserdata/
