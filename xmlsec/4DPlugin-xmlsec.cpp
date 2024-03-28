@@ -374,6 +374,7 @@ static xmlNodePtr createRefNode(PA_ObjectRef options,
         
         xmlString reference_id;
         xmlString reference_type;
+        xmlString reference_uri;
         
         if(options) {
             
@@ -383,25 +384,58 @@ static xmlNodePtr createRefNode(PA_ObjectRef options,
             
             if(xmldsig) {
                 
-                PA_ObjectRef ref = ob_get_o(xmldsig, L"ref");
-                
-                if(ref) {
+                if(ob_is_defined(xmldsig, L"ref")) {
+
+                    PA_ObjectRef ref = ob_get_o(xmldsig, L"ref");
                     
-                    if(ob_get_s(ref, L"id", &textValue)) {
-                        reference_id = BAD_CAST textValue.c_str();
+                    if(ref) {
+                        
+                        if(ob_get_s(ref, L"id", &textValue)) {
+                            reference_id = BAD_CAST textValue.c_str();
+                        }
+                                            
+                        if(ob_get_s(ref, L"type", &textValue)) {
+                            reference_type = BAD_CAST textValue.c_str();
+                        }
+                        
                     }
-                                        
-                    if(ob_get_s(ref, L"type", &textValue)) {
-                        reference_type = BAD_CAST textValue.c_str();
-                    }
+                    
+                    refNode = xmlSecTmplSignatureAddReference(signNode,
+                                                              digestMethod,
+                                                              reference_id.length() ? reference_id.c_str() : NULL,
+                                                              BAD_CAST "",
+                                                              reference_type.length() ? reference_type.c_str() : NULL);
+                    
+                }else if (ob_is_defined(xmldsig, L"refs")) {
+                 
+                    PA_CollectionRef refs = ob_get_c(xmldsig, L"refs");
+                    
+                    if(refs) {
+                        
+                        for(PA_long32 i = 0; i < PA_GetCollectionLength(refs); ++i) {
+                            PA_Variable v = PA_GetCollectionElement(refs, i);
+                                PA_ObjectRef ref = PA_GetObjectVariable(v);
+                                if(ref) {
+                                    
+                                    if(ob_get_s(ref, L"id", &textValue)) {
+                                        reference_id = BAD_CAST textValue.c_str();
+                                    }
+                                    if(ob_get_s(ref, L"type", &textValue)) {
+                                        reference_type = BAD_CAST textValue.c_str();
+                                    }
+                                    if(ob_get_s(ref, L"uri", &textValue)) {
+                                        reference_uri = BAD_CAST textValue.c_str();
+                                    }
+                                    refNode = xmlSecTmplSignatureAddReference(signNode,
+                                                                              digestMethod,
+                                                                              reference_id.length() ? reference_id.c_str() : NULL,
+                                                                              reference_id.length() ? reference_uri.c_str() : NULL,
+                                                                              reference_type.length() ? reference_type.c_str() : NULL);
+                                }
+                            }
+                        }
+
                 }
-                
-                refNode = xmlSecTmplSignatureAddReference(signNode,
-                                                          digestMethod,
-                                                          reference_id.length() ? reference_id.c_str() : NULL,
-                                                          BAD_CAST "",
-                                                          reference_type.length() ? reference_type.c_str() : NULL);
-                
             }
         }
     }
@@ -1863,7 +1897,65 @@ static void doIt(PA_PluginParameters params,
                     xmlDocPtr doc = NULL;
                     xmlSecKeyDataFormat keyFmt = getFmt(options, L"key");
                     xmlSecKeyDataFormat crtFmt = getFmt(options, L"cert");
-                                                   
+                                    
+                    xmlSecTransformId transformMethod = xmlSecTransformEnvelopedId;
+                    
+                    if(ob_is_defined(options, L"transform")) {
+                        int transform = (int)ob_get_n(options, L"transform");
+                        switch (transform) {
+                            case 0:
+                                transformMethod = xmlSecTransformIdUnknown;
+                                break;
+                            case 1:
+                                transformMethod = xmlSecTransformBase64Id;
+                                break;
+                            case 2:
+                                transformMethod = xmlSecTransformInclC14NId;
+                                break;
+                            case 3:
+                                transformMethod = xmlSecTransformInclC14NWithCommentsId;
+                                break;
+                            case 4:
+                                transformMethod = xmlSecTransformInclC14N11Id;
+                                break;
+                            case 5:
+                                transformMethod = xmlSecTransformInclC14N11WithCommentsId;
+                                break;
+                            case 6:
+                                transformMethod = xmlSecTransformExclC14NId;
+                                break;
+                            case 7:
+                                transformMethod = xmlSecTransformExclC14NWithCommentsId;
+                                break;
+                            case 8:
+                                transformMethod = xmlSecTransformEnvelopedId;
+                                break;
+                            case 9:
+                                transformMethod = xmlSecTransformXPathId;
+                                break;
+                            case 10:
+                                transformMethod = xmlSecTransformXPath2Id;
+                                break;
+                            case 11:
+                                transformMethod = xmlSecTransformXPointerId;
+                                break;
+                            case 12:
+                                transformMethod = xmlSecTransformRelationshipId;
+                                break;
+                            case 13:
+                                transformMethod = xmlSecTransformXsltId;
+                                break;
+                            case 14:
+                                transformMethod = xmlSecTransformRemoveXmlTagsC14NId;
+                                break;
+                            case 15:
+                                transformMethod = xmlSecTransformVisa3DHackId;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    
                     xmlSecTransformId digestMethod = getOptionDigestMethod(options, L"digest");
 
                     if(options) {
@@ -1893,7 +1985,7 @@ static void doIt(PA_PluginParameters params,
                                     
                                     if(refNode) {
                                         
-                                        if(xmlSecTmplReferenceAddTransform(refNode, xmlSecTransformEnvelopedId)) {
+                                        if(xmlSecTmplReferenceAddTransform(refNode, transformMethod)) {
                                                                                               
                                         }else{
                                             ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplReferenceAddTransform");
