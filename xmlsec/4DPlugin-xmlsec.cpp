@@ -432,14 +432,15 @@ static void registerIds(PA_ObjectRef options, xmlDocPtr doc) {
                                                         xmlAttrPtr attr = node->parent->properties;
                                                         
                                                         xmlChar* value = xmlNodeListGetString(node->doc, attr->children, 1);
-                                                        NSLog(@"add id: %s, value: %s",node->name, value);
                                                         
-                                                        xmlAddID(NULL,
-                                                                 node->doc,
-                                                                 value,
-                                                                 attr);
-                                                        
-                                                        xmlFree(value);
+                                                        if (value != NULL) {
+                                                            xmlAddID(NULL,
+                                                                node->doc,
+                                                                value,
+                                                                attr);
+
+                                                            xmlFree(value);
+                                                        }
                                                     }
                                                 }
                                                 xmlXPathFreeObject(result);
