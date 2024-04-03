@@ -3,3 +3,6 @@ xmlsec/test/userPreferences.*
 xmlsec/test/Project/DerivedData/f*
 xmlsec/xmlsec.xcodeproj/project.xcworkspace/xcuserdata/
 xmlsec/test/Data/*
+xmlsec/Objs/*
+xmlsec/.vs/*
+xmlsec/xmlsec.vcxproj.user
