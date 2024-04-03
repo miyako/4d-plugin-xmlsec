@@ -136,6 +136,8 @@ static std::string base64_encode_uri(const unsigned char *ptr, size_t size);
 static std::string base64_encode(const unsigned char *ptr, size_t size);
 static void base64_decode_uri(std::vector<unsigned char>& decoded, std::string encoded);
 
+static xmlSecTransformId getTransformId(PA_ObjectRef xmldsig, const wchar_t *key);
+
 typedef struct _xmlSecOpenSSLX509DataCtx                xmlSecOpenSSLX509DataCtx,
                                                         *xmlSecOpenSSLX509DataCtxPtr;
 struct _xmlSecOpenSSLX509DataCtx {

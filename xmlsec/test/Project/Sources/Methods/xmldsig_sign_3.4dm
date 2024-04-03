@@ -25,9 +25,7 @@ $params.xmldsig.sign:="rsa-sha256"
 //Reference
 $ref_id:="reference-"+generate_lowercase_uuid
 $params.xmldsig.digest:="sha1"
-$params.xmldsig.ref:=New object:C1471
-$params.xmldsig.ref.id:=$ref_id
-$params.xmldsig.ref.type:="http://www.w3.org/2000/09/xmldsig#Object"
+$params.xmldsig.refs:=[{id: $ref_id; type: "http://www.w3.org/2000/09/xmldsig#Object"}]
 
 //pass an array of X509 certificates
 

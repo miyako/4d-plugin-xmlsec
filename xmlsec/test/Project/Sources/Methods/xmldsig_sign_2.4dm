@@ -23,14 +23,10 @@ $params.xmldsig.sign:="rsa-sha256"
 //when the xml does not contain a template, one is created according to xmldsig params
 
 If (True:C214)  //optional
-	
 	//Reference
 	$ref_id:="reference-"+generate_lowercase_uuid
 	$params.xmldsig.digest:="sha1"  //default:sha1, sha224, sha256, sha384, sha512
-	$params.xmldsig.ref:=New object:C1471
-	$params.xmldsig.ref.id:=$ref_id
-	$params.xmldsig.ref.type:="http://www.w3.org/2000/09/xmldsig#Object"
-	
+	$params.xmldsig.refs:=[{id: $ref_id; type: "http://www.w3.org/2000/09/xmldsig#Object"}]
 End if 
 
 $doc:=Folder:C1567(fk resources folder:K87:11).folder("xmldsig_sign").file("sign-doc.xml")
