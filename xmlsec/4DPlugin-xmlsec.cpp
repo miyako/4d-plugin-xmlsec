@@ -253,6 +253,24 @@ static void verify_result(PA_ObjectRef status, xmlSecDSigCtxPtr pDsigCtx) {
 
 }
 
+static void sign_debug(PA_ObjectRef status, xmlDocPtr doc) {
+    
+    xmlChar *xml = NULL;
+    int len = 0;
+    
+    xmlDocDumpFormatMemoryEnc(doc, &xml, &len, "UTF-8", 1);
+    if(xml) {
+        if(len) {
+            CUTF8String result = CUTF8String(BAD_CAST xml, (size_t)len);
+            ob_set_s(status, L"debug", (const char *)result.c_str());
+            ob_set_b(status, L"success", false);
+        }else{
+            ob_set_s(status, L"error", (const char *)"failed:xmlOutputBufferGetSize");
+        }
+        xmlFree(xml);
+    }
+}
+
 static void sign_result(PA_ObjectRef status, xmlDocPtr doc) {
     
     xmlChar *xml = NULL;
@@ -364,6 +382,80 @@ static xmlSecTransformId getOptionDigestMethod(PA_ObjectRef options, const wchar
     return xmlSecTransformSha1Id;
 }
 
+static void registerIds(PA_ObjectRef options, xmlDocPtr doc) {
+    
+    if(options) {
+        
+        CUTF8String textValue;
+        
+        PA_ObjectRef xmldsig = ob_get_o(options, L"xmldsig");
+        
+        if(xmldsig) {
+            
+            if(ob_is_defined(xmldsig, L"ids")) {
+                PA_CollectionRef ids = ob_get_c(xmldsig, L"ids");
+                if(ids) {
+                    for(PA_long32 i =0; i < PA_GetCollectionLength(ids); ++i) {
+                        PA_Variable v = PA_GetCollectionElement(ids, i);
+                        if(PA_GetVariableKind(v) == eVK_Object) {
+                            PA_ObjectRef _id = PA_GetObjectVariable(v);
+                            if(_id) {
+                                
+                                xmlString id_prefix;
+                                xmlString id_namespace;
+                                xmlString id_name;
+                                
+                                if(ob_get_s(_id, L"prefix", &textValue)) {
+                                    id_prefix = BAD_CAST textValue.c_str();
+                                    if(ob_get_s(_id, L"namespace", &textValue)) {
+                                        id_namespace = BAD_CAST textValue.c_str();
+                                        if(ob_get_s(_id, L"name", &textValue)) {
+                                            id_name = BAD_CAST textValue.c_str();
+                                            xmlString id_xpath = (const xmlChar *)"//*/@";
+                                            id_xpath += id_prefix;
+                                            id_xpath += (const xmlChar *)":";
+                                            id_xpath += id_name;
+                                            
+                                            xmlXPathContextPtr context = xmlXPathNewContext(doc);
+                                            
+                                            xmlXPathRegisterNs(context,
+                                                               id_prefix.c_str(),
+                                                               id_namespace.c_str());
+                                            
+                                            xmlXPathObjectPtr result = xmlXPathEvalExpression(id_xpath.c_str(), context);
+                                            
+                                            if(result) {
+                                                for (int i = 0; i < result->nodesetval->nodeNr; ++i) {
+                                                    auto node = result->nodesetval->nodeTab[i];
+                                                    if(node->type == XML_ATTRIBUTE_NODE) {
+                                                        
+                                                        xmlAttrPtr attr = node->parent->properties;
+                                                        
+                                                        xmlChar* value = xmlNodeListGetString(node->doc, attr->children, 1);
+                                                        NSLog(@"add id: %s, value: %s",node->name, value);
+                                                        
+                                                        xmlAddID(NULL,
+                                                                 node->doc,
+                                                                 value,
+                                                                 attr);
+                                                        
+                                                        xmlFree(value);
+                                                    }
+                                                }
+                                                xmlXPathFreeObject(result);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 static xmlNodePtr createRefNode(PA_ObjectRef options,
                                 xmlNodePtr signNode,
                                 xmlSecTransformId digestMethod) {
@@ -371,10 +463,7 @@ static xmlNodePtr createRefNode(PA_ObjectRef options,
     xmlNodePtr refNode = NULL;
     
     if(signNode) {
-        
-        xmlString reference_id;
-        xmlString reference_type;
-        
+
         if(options) {
             
             CUTF8String textValue;
@@ -394,6 +483,11 @@ static xmlNodePtr createRefNode(PA_ObjectRef options,
                                 PA_ObjectRef ref = PA_GetObjectVariable(v);
                                 if(ref) {
                                     
+                                    xmlString reference_id;
+                                    xmlString reference_type;
+                                    xmlString reference_uri;
+                                    xmlString xmldsig_prefixList;
+                                    
                                     if(ob_get_s(ref, L"id", &textValue)) {
                                         reference_id = BAD_CAST textValue.c_str();
                                     }
@@ -402,14 +496,27 @@ static xmlNodePtr createRefNode(PA_ObjectRef options,
                                         reference_type = BAD_CAST textValue.c_str();
                                     }
                                     
+                                    if(ob_get_s(ref, L"uri", &textValue)) {
+                                        reference_uri = BAD_CAST textValue.c_str();
+                                    }
+                                    
+                                    if(ob_get_s(ref, L"prefixList", &textValue)) {
+                                        xmldsig_prefixList = BAD_CAST textValue.c_str();
+                                    }
+                                    
                                     refNode = xmlSecTmplSignatureAddReference(signNode,
                                                                               digestMethod,
                                                                               reference_id.length() ? reference_id.c_str() : NULL,
-                                                                              BAD_CAST "",
+                                                                              reference_uri.length() ? reference_uri.c_str() : NULL,
                                                                               reference_type.length() ? reference_type.c_str() : NULL);
                                     if(refNode) {
-                                        if(xmlSecTmplReferenceAddTransform(refNode, c14n)) {
-                                            
+
+                                        xmlNodePtr transformNode = xmlSecTmplReferenceAddTransform(refNode, c14n);
+                                        
+                                        if(transformNode) {
+                                            if(xmldsig_prefixList.length() != 0) {
+                                                xmlSecTmplTransformAddC14NInclNamespaces(transformNode, BAD_CAST xmldsig_prefixList.c_str());
+                                            }
                                         }
                                     }
                                 }
@@ -562,6 +669,7 @@ static xmlNodePtr createSignNode(PA_ObjectRef options, xmlDocPtr doc) {
         xmlString xmldsig_ns = BAD_CAST "ds";
         xmlSecTransformId c14n = xmlSecTransformExclC14NId;
         xmlSecTransformId sign = xmlSecTransformRsaSha1Id;
+        xmlString xmldsig_prefixList;
         
         if(options) {
             
@@ -581,8 +689,11 @@ static xmlNodePtr createSignNode(PA_ObjectRef options, xmlDocPtr doc) {
                 
                 c14n = getTransformId(xmldsig, L"c14n");
                 sign = getSignMethodId(xmldsig, L"sign");
+                
+                if(ob_get_s(xmldsig, L"prefixList", &textValue)) {
+                    xmldsig_prefixList = BAD_CAST textValue.c_str();
+                }
             }
-
         }
         
         if(xmldsig_ns.length()) {
@@ -599,6 +710,30 @@ static xmlNodePtr createSignNode(PA_ObjectRef options, xmlDocPtr doc) {
         }
         
         if(signNode) {
+            
+            if(xmldsig_prefixList.length() != 0) {
+                xmlNodePtr signedInfoNode = xmlSecFindChild(signNode, xmlSecNodeSignedInfo, xmlSecDSigNs);
+                if(signedInfoNode != NULL) {
+                    xmlNodePtr canonicalizationMethodNode = xmlSecFindChild(signedInfoNode, xmlSecNodeCanonicalizationMethod, xmlSecDSigNs);
+                    if(canonicalizationMethodNode != NULL) {
+                        const xmlChar *NsExc = NULL;
+                        if(c14n == xmlSecTransformExclC14NId) {
+                            NsExc = xmlSecNsExcC14N;
+                        }else if(c14n == xmlSecTransformExclC14NWithCommentsId) {
+                            NsExc = xmlSecNsExcC14NWithComments;
+                        }
+                        if(NsExc) {
+                            xmlNodePtr inclusiveNamespacesNode = xmlSecFindChild(canonicalizationMethodNode, xmlSecNodeInclusiveNamespaces, NsExc);
+                            if(inclusiveNamespacesNode == NULL) {
+                                inclusiveNamespacesNode = xmlSecAddChild(canonicalizationMethodNode, xmlSecNodeInclusiveNamespaces, NsExc);
+                                if(inclusiveNamespacesNode) {
+                                    xmlSetProp(inclusiveNamespacesNode, xmlSecAttrPrefixList, BAD_CAST xmldsig_prefixList.c_str());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             xmlAddChild(xmlDocGetRootElement(doc), signNode);
         }
     }
@@ -1884,7 +2019,7 @@ static void doIt(PA_PluginParameters params,
                     if(options) {
                         
                         CUTF8String textValue;
-                                                                                                
+
                         doc = parseXml(options, L"xml");
                         
                     }
@@ -1949,12 +2084,15 @@ static void doIt(PA_PluginParameters params,
                                     }
                                     
                                     putXades(options, doc, signNode, digestMethod, Param2, Param3, keyValueNode);
+                                    
+                                    registerIds(options, doc);
 
                                     switch (command) {
                                         case xmlsec_command_sign:
                                             if(cb(pDsigCtx, node) == 0) {
                                                 sign_result(status, doc);
                                             }else{
+                                                sign_debug(status, doc);
                                                 ob_set_s(status, L"error", (const char *)"failed:xmlSecDSigCtxSign");
                                             }
                                             break;
