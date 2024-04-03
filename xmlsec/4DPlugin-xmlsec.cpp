@@ -1899,6 +1899,7 @@ static void doIt(PA_PluginParameters params,
                     xmlSecKeyDataFormat crtFmt = getFmt(options, L"cert");
                                     
                     xmlSecTransformId transformMethod = xmlSecTransformEnvelopedId;
+                    CUTF8String prefixList;
                     
                     if(ob_is_defined(options, L"transform")) {
                         int transform = (int)ob_get_n(options, L"transform");
@@ -1954,6 +1955,12 @@ static void doIt(PA_PluginParameters params,
                             default:
                                 break;
                         }
+                        
+                        if((transform == 6)||(transform == 6)) {
+                            if(ob_is_defined(options, L"prefixList")) {
+                                ob_get_s(options, L"prefixList", &prefixList);
+                            }
+                        }
                     }
                     
                     xmlSecTransformId digestMethod = getOptionDigestMethod(options, L"digest");
@@ -1985,8 +1992,11 @@ static void doIt(PA_PluginParameters params,
                                     
                                     if(refNode) {
                                         
-                                        if(xmlSecTmplReferenceAddTransform(refNode, transformMethod)) {
-                                                                                              
+                                        xmlNodePtr transformNode = xmlSecTmplReferenceAddTransform(refNode, transformMethod);
+                                        if((transformNode) && (prefixList.length() != 0)) {
+
+                                            xmlSecTmplTransformAddC14NInclNamespaces(transformNode, BAD_CAST prefixList.c_str());
+                                            
                                         }else{
                                             ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplReferenceAddTransform");
                                         }
