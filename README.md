@@ -8,7 +8,7 @@ XML signature based on [xmlsec](https://www.aleksey.com/xmlsec/).
 
 ## Homebrew
 
-Monterey bottle is `1.3.3`. Ventura bottle is `1.3.4`.
+Monterey bottle is `1.3.3`. Ventura bottle is `1.3.4`. vcpkg is `1.3.3`.
 
 [miyako.github.io](https://miyako.github.io/2021/05/31/4d-plugin-xmlsec.html)
 
