@@ -68,6 +68,15 @@ typedef enum {
     
 }xmlsec_command_t;
 
+typedef enum {
+ 
+    xmlsec_add_child = 0,
+    xmlsec_add_previous_sibling  = 1,
+    xmlsec_add_sibling = 2,
+    xmlsec_add_next_sibling = 3
+    
+}xmlsec_add_t;
+
 /* Original source code taken from
  * https://svn.apache.org/repos/asf/apr/apr/trunk/encoding/apr_base64.c
  *

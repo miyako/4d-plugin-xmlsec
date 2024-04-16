@@ -3,4 +3,22 @@
    uuid = "1CE2D8A7-44CC-42E1-B10D-1013C5640A12"
    type = "1"
    version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "B24C9F8B-D8B6-49C8-9060-F4B4B543A39F"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "include/xmlsec1/xmlsec/templates.h"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "94"
+            endingLineNumber = "94"
+            landmarkName = "xmlSecTmplReferenceListAddDataReference(encNode, uri)"
+            landmarkType = "8">
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
 </Bucket>

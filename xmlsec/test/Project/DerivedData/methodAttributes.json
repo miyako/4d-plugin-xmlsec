@@ -1,13 +1,16 @@
 {
 	"methods": {
 		"test_11": {
-			"timeStamp": "2024-04-16T08:18:30Z"
+			"timeStamp": "2024-04-16T08:50:50Z"
 		},
 		"generate_lowercase_uuid": {
 			"timeStamp": "2023-06-09T04:57:19Z",
 			"attributes": {
 				"invisible": true
 			}
+		},
+		"test_encrypt": {
+			"timeStamp": "2024-04-16T13:47:38Z"
 		},
 		"XAdES": {
 			"timeStamp": "2023-06-09T04:57:19Z",
@@ -28,7 +31,7 @@
 			}
 		},
 		"xmldsig_sign_6": {
-			"timeStamp": "2024-04-03T12:19:27Z",
+			"timeStamp": "2024-04-16T10:54:31Z",
 			"attributes": {
 				"invisible": true
 			}

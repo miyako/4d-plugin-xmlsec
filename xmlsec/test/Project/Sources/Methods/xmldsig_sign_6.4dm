@@ -28,9 +28,8 @@ $params.xmldsig.refs:=[{id: $ref_id; type: "http://www.w3.org/2000/09/xmldsig#Ob
 $params.xmldsig.ski:=False:C215  //default:false
 $params.xmldsig.crl:=False:C215  //default:false
 $params.xmldsig.subjectName:=False:C215  //default:false
-$params.xmldsig.keyValue:=True:C214  //default:true
 $params.xmldsig.issuerSerial:=False:C215  //default:false
-$params.xmldsig.certificate:=True:C214  //default:true
+$params.xmldsig.certificate:=False:C215  //default:false
 
 //pass an array of X509 certificates to create a chain for xades
 
