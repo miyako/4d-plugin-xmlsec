@@ -10,6 +10,14 @@ XML signature based on [xmlsec](https://www.aleksey.com/xmlsec/).
 
 as of `2024-04-16`, Monterey/Ventura bottle is `1.3.4`, vcpkg is `1.3.3`.
 
+`1.3.x` breaks compatibility. set flag.
+
+```c
+pDsigCtx->keyInfoReadCtx.flags  |= XMLSEC_KEYINFO_FLAGS_LAX_KEY_SEARCH;
+pDsigCtx->keyInfoWriteCtx.flags |= XMLSEC_KEYINFO_FLAGS_LAX_KEY_SEARCH;
+```
+
+
 [miyako.github.io](https://miyako.github.io/2021/05/31/4d-plugin-xmlsec.html)
 
 ## OpenSSL tips
