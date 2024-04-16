@@ -6,12 +6,11 @@
  * This is free software; see Copyright file in the source
  * distribution for preciese wording.
  *
- * Copyright (C) 2002-2022 Aleksey Sanin <aleksey@aleksey.com>. All Rights Reserved.
+ * Copyright (C) 2002-2016 Aleksey Sanin <aleksey@aleksey.com>. All Rights Reserved.
  */
 #ifndef __XMLSEC_LIST_H__
 #define __XMLSEC_LIST_H__
 
-#include <xmlsec/exports.h>
 #include <xmlsec/xmlsec.h>
 #include <xmlsec/buffer.h>
 
@@ -63,9 +62,6 @@ XMLSEC_EXPORT xmlSecPtr         xmlSecPtrListGetItem            (xmlSecPtrListPt
                                                                  xmlSecSize pos);
 XMLSEC_EXPORT int               xmlSecPtrListAdd                (xmlSecPtrListPtr list,
                                                                  xmlSecPtr item);
-XMLSEC_EXPORT int               xmlSecPtrListInsert             (xmlSecPtrListPtr list,
-                                                                 xmlSecPtr item,
-                                                                 xmlSecSize pos);
 XMLSEC_EXPORT int               xmlSecPtrListSet                (xmlSecPtrListPtr list,
                                                                  xmlSecPtr item,
                                                                  xmlSecSize pos);
@@ -195,3 +191,4 @@ XMLSEC_EXPORT xmlSecPtrListId   xmlSecStringListGetKlass        (void);
 #endif /* __cplusplus */
 
 #endif /* __XMLSEC_LIST_H__ */
+

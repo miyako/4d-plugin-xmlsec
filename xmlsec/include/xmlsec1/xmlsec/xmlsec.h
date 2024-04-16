@@ -6,13 +6,12 @@
  * This is free software; see Copyright file in the source
  * distribution for preciese wording.
  *
- * Copyright (C) 2002-2022 Aleksey Sanin <aleksey@aleksey.com>. All Rights Reserved.
+ * Copyright (C) 2002-2016 Aleksey Sanin <aleksey@aleksey.com>. All Rights Reserved.
  */
 #ifndef __XMLSEC_H__
 #define __XMLSEC_H__
 
 #include <libxml/tree.h>
-#include <libxml/parser.h>
 
 #include <xmlsec/version.h>
 #include <xmlsec/exports.h>
@@ -34,39 +33,33 @@ extern "C" {
  */
 typedef void*                                   xmlSecPtr;
 
-
-/**
- * XMLSEC_SIZE_T_FMT:
- *
- * The only reason we need this is that MinGW doesn't recognize "%zu"
- * despite the fact that MSVC runtime supports it for 10+ years.
- */
-#if defined(__MINGW64__)
-#define XMLSEC_SIZE_T_FMT                      "%llu"
-#elif defined(__MINGW32__)
-#define XMLSEC_SIZE_T_FMT                      "%lu"
-#else /*defined(__MINGW32__) */
-#define XMLSEC_SIZE_T_FMT                      "%zu"
-#endif /* defined(__MINGW32__) */
-
 /**
  * xmlSecSize:
  *
- * Size of something.
+ * Size of something. Should be typedef instead of define
+ * but it will break ABI (todo).
  */
-
-typedef size_t xmlSecSize;
+#ifdef XMLSEC_NO_SIZE_T
+#define xmlSecSize                              unsigned int
+#else  /* XMLSEC_NO_SIZE_T */
 #define xmlSecSize                              size_t
-#define XMLSEC_SIZE_MIN                         ((xmlSecSize)0)
-#define XMLSEC_SIZE_MAX                         SIZE_MAX
-#define XMLSEC_SIZE_FMT                         XMLSEC_SIZE_T_FMT
+#endif /* XMLSEC_NO_SIZE_T */
+
+/**
+ * XMLSEC_SIZE_BAD_CAST:
+ * @val:        the value to cast
+ *
+ * Bad cast to xmlSecSize
+ */
+#define XMLSEC_SIZE_BAD_CAST(val)               ((xmlSecSize)(val))
 
 /**
  * xmlSecByte:
  *
- * One byte.
+ * One byte. Should be typedef instead of define
+ * but it will break ABI (todo).
  */
-typedef unsigned char xmlSecByte;
+#define xmlSecByte                              unsigned char
 
 /***********************************************************************
  *
@@ -93,28 +86,33 @@ typedef struct _xmlSecEncCtx                    xmlSecEncCtx, *xmlSecEncCtxPtr;
 XMLSEC_EXPORT int                               xmlSecInit              (void);
 XMLSEC_EXPORT int                               xmlSecShutdown          (void);
 XMLSEC_EXPORT const xmlChar *                   xmlSecGetDefaultCrypto  (void);
-XMLSEC_EXPORT void                              xmlSecSetExternalEntityLoader (xmlExternalEntityLoader entityLoader);
-XMLSEC_EXPORT xmlSecSize                        xmlSecStrlen            (const xmlChar * str);
+XMLSEC_EXPORT void                              xmlSecSetExternalEntityLoader (xmlExternalEntityLoader);
 
 /**
- * XMLSEC_DEPRECATED:
+ * XMLSEC_CRYPTO:
  *
- * Marks function as deprecated.
+ * Macro. Deprecated. Defined for backward compatibility only. Do not use
+ * in your code and use xmlSecGetDefaultCrypto() function instead.
+ *
+ * Returns the default crypto engine.
  */
-#if !defined(IN_XMLSEC) && !defined(IN_XMLSEC_CRYPTO)
-#if defined(__GNUC__)
-#define XMLSEC_DEPRECATED __attribute__((deprecated))
-#elif defined(__clang__)
+#define XMLSEC_CRYPTO                          (xmlSecGetDefaultCrypto())
+
+/*
+ * XMLSEC_DEPRECATED function definition
+ */
+#if !defined(IN_XMLSEC)
+#ifdef __GNUC__
 #define XMLSEC_DEPRECATED __attribute__((deprecated))
 #elif defined(_MSC_VER)
 #define XMLSEC_DEPRECATED __declspec(deprecated)
 #else /* defined(_MSC_VER) */
-#warning "WARNING: You need to implement XMLSEC_DEPRECATED for this compiler"
+#pragma message("WARNING: You need to implement XMLSEC_DEPRECATED for this compiler")
 #define XMLSEC_DEPRECATED
 #endif /* defined(_MSC_VER) */
-#else  /* !defined(IN_XMLSEC) && !defined(IN_XMLSEC_CRYPTO) */
+#else  /* !defined(IN_XMLSEC) */
 #define XMLSEC_DEPRECATED
-#endif /* !defined(IN_XMLSEC) && !defined(IN_XMLSEC_CRYPTO) */
+#endif /* !defined(IN_XMLSEC) */
 
 /***********************************************************************
  *
@@ -163,3 +161,5 @@ XMLSEC_EXPORT int       xmlSecCheckVersionExt   (int major,
 #endif /* __cplusplus */
 
 #endif /* __XMLSEC_H__ */
+
+
