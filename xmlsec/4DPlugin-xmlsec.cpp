@@ -2247,6 +2247,9 @@ static void doIt(PA_PluginParameters params,
                 
                 if(pDsigCtx) {
                     
+                    pDsigCtx->keyInfoReadCtx.flags  |= XMLSEC_KEYINFO_FLAGS_LAX_KEY_SEARCH;
+                    pDsigCtx->keyInfoWriteCtx.flags |= XMLSEC_KEYINFO_FLAGS_LAX_KEY_SEARCH;
+                    
                     xmlDocPtr doc = NULL;
                     xmlSecKeyDataFormat keyFmt = getFmt(options, L"key");
                     xmlSecKeyDataFormat crtFmt = getFmt(options, L"cert");
@@ -2344,9 +2347,7 @@ static void doIt(PA_PluginParameters params,
                             if(keysMngr) {
                                 
                                 if(xmlSecCryptoAppDefaultKeysMngrInit(keysMngr) == 0) {
-                                    
-                                    pDsigCtx->flags |= XMLSEC_KEYINFO_FLAGS_DONT_STOP_ON_KEY_FOUND;
-                                    
+                                                                        
                                     xmlNodePtr keyValueNode = NULL;
                                     
                                     if(Param2.getBytesLength()) {
