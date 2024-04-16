@@ -170,36 +170,6 @@ static xmlNodePtr findNode(PA_ObjectRef options, xmlDocPtr doc) {
                 
         CUTF8String textValue;
         
-        /*
-        if(ob_get_s(options, L"node", &textValue)) {
-            xmlChar *buf = xmlStrdup(BAD_CAST textValue.c_str());
-            if(buf) {
-                xmlChar *name;
-                xmlChar *prefix;
-                name = (xmlChar *)strrchr((char *)buf, ':');
-                if(name != NULL) {
-                    (*(name++)) = '\0';
-                    prefix = buf;
-                } else {
-                    name = buf;
-                    prefix = NULL;
-                }
-                                
-                xmlNsPtr ns = xmlSearchNs(doc, xmlDocGetRootElement(doc), prefix);
-                
-                if(ns) {
-                    node = xmlSecFindNode(xmlDocGetRootElement(doc), name, ns->href);
-                }
-                
-                xmlFree(buf);
-                
-                if(node) {
-                    return node;
-                }
-            }
-        }
-        */
-
         if(ob_get_s(options, L"xpath", &textValue)) {
             xmlNodePtr rootNode = xmlDocGetRootElement(doc);
             if(rootNode) {
@@ -492,24 +462,52 @@ static xmlSecTransformId getCryptMethod(PA_ObjectRef xmlenc, const wchar_t *key)
     return xmlSecOpenSSLTransformDes3CbcId;
 }
 
+static void getIssuer(X509 *cert, xmlString& issuerName, xmlString& serialNumber);
+
 static xmlNodePtr createEncNode(PA_ObjectRef options,
-                                xmlDocPtr doc,
+                                xmlNodePtr signNode,
                                 xmlSecTransformId digestMethod) {
     
+    xmlDocPtr doc = signNode ? signNode->doc : NULL;
+    
     xmlNodePtr encNode = NULL;
+    
     xmlString xmlenc_ns = BAD_CAST "xenc";
     xmlString xmlenc_id;
+    
     xmlString wsse_ns = BAD_CAST "wsse";
+    xmlString wsse_ns_href = BAD_CAST "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd";
+
+    xmlString wsu_ns = BAD_CAST "wsu";
+    xmlString wsu_ns_href = BAD_CAST "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd";
+
     xmlString xmldsig_ns = BAD_CAST "ds";
+
+    xmlString binarySecurityToken;
+    xmlString binarySecurityToken_id;
     
     if(options) {
-        PA_ObjectRef xmlenc = ob_get_o(options, L"xmlenc");
+        PA_ObjectRef xmlenc = ob_get_o(options, L"wsse");
         if(xmlenc) {
             //xenc:EncryptedKey
             encNode = xmlNewNode(NULL, xmlSecNodeEncryptedKey);
             if(encNode) {
                 CUTF8String textValue;
                 
+                PA_ObjectRef bst = ob_get_o(xmlenc, L"binarySecurityToken");
+                if(bst) {
+                    if(ob_is_defined(bst, L"content")
+                       && ob_get_s(bst, L"content", &textValue)
+                       && textValue.length()) {
+                        binarySecurityToken = BAD_CAST textValue.c_str();
+                    }
+                    if(ob_is_defined(bst, L"id")
+                       && ob_get_s(bst, L"id", &textValue)
+                       && textValue.length()) {
+                        binarySecurityToken_id = BAD_CAST textValue.c_str();
+                    }
+                }
+
                 if(ob_is_defined(xmlenc, L"ns")
                    && ob_get_s(xmlenc, L"ns", &textValue)
                    && textValue.length()) {
@@ -526,7 +524,7 @@ static xmlNodePtr createEncNode(PA_ObjectRef options,
                     xmlSetProp(encNode, xmlSecAttrId, xmlenc_id.c_str());
                 }
                 
-                //          xenc:EncryptionMethod
+                //xenc:EncryptionMethod
                 xmlNodePtr cryptMethodNode = xmlSecAddChild(encNode, xmlSecNodeEncryptionMethod, xmlSecEncNs);
                 if(cryptMethodNode) {
                     xmlSecTransformId cryptMethod = getCryptMethod(xmlenc, L"crypt");
@@ -539,13 +537,12 @@ static xmlNodePtr createEncNode(PA_ObjectRef options,
                                                    xmlSecDSigNs,
                                                    xmldsig_ns.c_str());
                         xmlSetNs(digestMethodNode, dsigNs);
-//                        xmlSecTransformId digestMethod = getDigestMethod(xmlenc, L"digest");
                         xmlSetProp(digestMethodNode, xmlSecAttrAlgorithm, digestMethod->name);
                         xmlAddChild(cryptMethodNode, digestMethodNode);
                     }
                 }
             }
-                
+
             if(xmlenc) {
                 xmlNodePtr referenceNode = findNode(xmlenc, doc);
                 xmlsec_add_t mode = getAddMode(xmlenc);
@@ -563,6 +560,59 @@ static xmlNodePtr createEncNode(PA_ObjectRef options,
                     default:
                         xmlAddChild(referenceNode, encNode);
                         break;
+                }
+                
+                xmlNodePtr tokenNode = xmlNewNode(NULL, BAD_CAST "BinarySecurityToken");
+                if(tokenNode) {
+                    xmlSetProp(tokenNode, BAD_CAST "EncodingType", BAD_CAST "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary");
+                    xmlSetProp(tokenNode, BAD_CAST "ValueType", BAD_CAST "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3");
+                    
+                    xmlNsPtr wsuNs = xmlSearchNsByHref(doc, xmlDocGetRootElement(doc), wsu_ns_href.c_str());
+                    if(!wsuNs) {
+                        wsuNs = xmlNewNs(tokenNode,
+                                         wsu_ns_href.c_str(),
+                                         wsu_ns.c_str());
+                    }
+                    xmlSetNsProp(tokenNode, wsuNs, BAD_CAST "Id", binarySecurityToken_id.c_str());
+
+                    xmlNodeSetContent(tokenNode, binarySecurityToken.c_str());
+                    
+                    xmlString hash, issuerName, serialNumber;
+                    
+                    xmlSecKeyDataFormat keyFmt = getFmt(options, L"key");
+                    xmlSecKeyDataFormat crtFmt = getFmt(options, L"cert");
+                    
+                    /*
+                    BIO *bio = BIO_new_mem_buf(binarySecurityToken.c_str(), binarySecurityToken.length());
+                    
+                    if(bio)
+                    {
+                        X509 *cert = NULL;
+                        switch (crtFmt) {
+                            case xmlSecKeyDataFormatPem:
+                            case xmlSecKeyDataFormatCertPem:
+                            case xmlSecKeyDataFormatPkcs8Pem:
+                                cert = PEM_read_bio_X509(bio, NULL, 0, NULL);
+                                break;
+                            default:
+                                cert = d2i_X509_bio(bio, NULL);
+                                break;
+                        }
+                        if(cert) {
+                            getIssuer(cert, issuerName, serialNumber);
+                        }
+                        BIO_free(bio);
+                    }
+                    
+                    */
+                    xmlNsPtr wsseNs = xmlSearchNsByHref(doc, xmlDocGetRootElement(doc), wsse_ns_href.c_str());
+                    if(!wsseNs) {
+                        wsseNs = xmlNewNs(tokenNode,
+                                          wsse_ns_href.c_str(),
+                                          wsse_ns.c_str());
+                    }
+                    xmlSetNs(tokenNode, wsseNs);
+                    xmlAddNextSibling(encNode, tokenNode);
                 }
             }
         }
@@ -794,20 +844,27 @@ static xmlNodePtr createSignNode(PA_ObjectRef options, xmlDocPtr doc) {
             
             if(xmldsig) {
                 
-                if(ob_get_s(xmldsig, L"ns", &textValue)) {
+                if(ob_is_defined(xmldsig, L"ns") 
+                   && ob_get_s(xmldsig, L"ns", &textValue)
+                   && textValue.length()) {
                     xmldsig_ns = BAD_CAST textValue.c_str();
                 }
 
-                if(ob_get_s(xmldsig, L"id", &textValue)) {
+                if(ob_is_defined(xmldsig, L"id")
+                   && ob_get_s(xmldsig, L"id", &textValue)
+                   && textValue.length()) {
                     xmldsig_id = BAD_CAST textValue.c_str();
+                }
+                
+                if(ob_is_defined(xmldsig, L"prefixList")
+                   && ob_get_s(xmldsig, L"prefixList", &textValue)
+                   && textValue.length()) {
+                    xmldsig_prefixList = BAD_CAST textValue.c_str();
                 }
                 
                 c14n = getTransformId(xmldsig, L"c14n");
                 sign = getSignMethodId(xmldsig, L"sign");
-                
-                if(ob_get_s(xmldsig, L"prefixList", &textValue)) {
-                    xmldsig_prefixList = BAD_CAST textValue.c_str();
-                }
+
             }
         }
         
@@ -883,6 +940,8 @@ static xmlNodePtr loadCerts(PA_ObjectRef options,
                             xmlSecKeyDataFormat crtFmt,
                             PA_Variable Param3) {
     
+    xmlDocPtr doc = signNode ? signNode->doc : NULL;
+    
     xmlNodePtr keyInfoNode = NULL;
     
     bool with_ski = false;
@@ -893,21 +952,22 @@ static xmlNodePtr loadCerts(PA_ObjectRef options,
     
     xmlString keyinfo_id;
     xmlString keyName;
+    xmlString str_id;
+    xmlString x509_id;
+    xmlString x509_uri;
     
     if(options) {
+        CUTF8String textValue;
         
         PA_ObjectRef xmldsig = ob_get_o(options, L"xmldsig");
-        
         if(xmldsig) {
-         
             with_ski = ob_get_b(xmldsig, L"ski");
             with_crl = ob_get_b(xmldsig, L"crl");
             with_subjectName = ob_get_b(xmldsig, L"subjectName");
             with_issuerSerial = ob_get_b(xmldsig, L"issuerSerial");
             with_certificate = ob_get_b(xmldsig, L"certificate");
             
-            CUTF8String textValue;
-
+            
             PA_ObjectRef keyInfo = ob_get_o(xmldsig, L"keyInfo");
             if(keyInfo) {
                 
@@ -919,7 +979,20 @@ static xmlNodePtr loadCerts(PA_ObjectRef options,
                 }
             }
         }
-    
+        PA_ObjectRef wsse = ob_get_o(options, L"wsse");
+        if(wsse) {
+            if(ob_is_defined(wsse, L"securityTokenReference") 
+               && ob_get_s(wsse, L"securityTokenReference", &textValue)
+               && textValue.length()) {
+                str_id = BAD_CAST textValue.c_str();
+            }
+            if(ob_is_defined(wsse, L"binarySecurityToken")
+               && ob_get_s(wsse, L"binarySecurityToken", &textValue)
+               && textValue.length()) {
+                x509_id = BAD_CAST textValue.c_str();
+            }
+        }
+        
     }
  
     xmlNodePtr x509DataNode = NULL;
@@ -936,14 +1009,11 @@ static xmlNodePtr loadCerts(PA_ObjectRef options,
     if(keyFmt != xmlSecKeyDataFormatPkcs12){
         if(PA_GetVariableKind(Param3) == eVK_ArrayBlob) {
             for(PA_ulong32 i = 1; i <= PA_GetArrayNbElements(Param3); ++i) {
-                          
                 PA_Blob blob = PA_GetBlobInArray(Param3, i);
                 PA_Handle h = blob.fHandle;
-                
                 if(h) {
                     void *p = (void *)PA_LockHandle(h);
                     PA_long32 size = PA_GetHandleSize(h);
-                    
                     xmlSecOpenSSLAppKeyCertLoadMemory (key,
                                                        (const xmlSecByte *)p,
                                                        size,
@@ -956,60 +1026,95 @@ static xmlNodePtr loadCerts(PA_ObjectRef options,
         hasCertificates = true;
     }
     
-    if(hasCertificates) {
-        
-        xmlString keyinfo_uri;
-        if(keyinfo_id.length()){
-            xmlString keyinfo_uri = BAD_CAST "#";
-            keyinfo_uri += keyinfo_id;
-            xmlNodePtr refNode = xmlSecTmplSignatureAddReference(signNode,
-                                                                 digestMethod,
-                                                                 NULL,
-                                                                 keyinfo_uri.length() ? keyinfo_uri.c_str() : NULL,
-                                                                 NULL);
-        }
-        
-        keyInfoNode = xmlSecTmplSignatureEnsureKeyInfo(signNode, keyinfo_id.c_str());//crash on null Id
-        
-        if(keyInfoNode) {
+    xmlString keyinfo_uri;
+    if(keyinfo_id.length()){
+        keyinfo_uri = BAD_CAST "#";
+        keyinfo_uri += keyinfo_id;
+    }
+    
+    if(keyinfo_uri.length()){
+        keyInfoNode = xmlSecTmplSignatureEnsureKeyInfo(signNode, keyinfo_id.c_str());
+    }
+    
+    xmlString wsse_ns = BAD_CAST "wsse";
+    xmlString wsse_ns_href = BAD_CAST "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd";
+    
+    xmlString wsu_ns = BAD_CAST "wsu";
+    xmlString wsu_ns_href = BAD_CAST "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd";
 
-            if(keyName.length()){
-                xmlSecTmplKeyInfoAddKeyName(keyInfoNode, BAD_CAST keyName.c_str());
-            }
-            
+    xmlString x509_value_type = BAD_CAST "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-x509-token-profile-1.0#X509v3";
+    
+    if(keyInfoNode) {
+        if(keyName.length()){
+            xmlSecTmplKeyInfoAddKeyName(keyInfoNode, BAD_CAST keyName.c_str());
         }
+        //wsse:SecurityTokenReference
+        xmlNodePtr tokenNode = xmlNewNode(NULL, BAD_CAST "SecurityTokenReference");
         
-        if(with_issuerSerial || with_ski || with_subjectName || with_certificate || with_crl) {
-            x509DataNode = xmlSecTmplKeyInfoAddX509Data(keyInfoNode);
+        if(str_id.length()) {
+            xmlNsPtr wsseNs = xmlSearchNsByHref(doc, xmlDocGetRootElement(doc), wsse_ns_href.c_str());
+            if(!wsseNs) {
+                wsseNs = xmlNewNs(tokenNode,
+                                  wsse_ns_href.c_str(),
+                                  wsse_ns.c_str());
+            }
+            xmlSetNs(tokenNode, wsseNs);
             
-            if(x509DataNode) {
+            xmlNsPtr wsuNs = xmlSearchNsByHref(doc, xmlDocGetRootElement(doc), wsu_ns_href.c_str());
+            if(!wsuNs) {
+                wsuNs = xmlNewNs(tokenNode,
+                                 wsu_ns_href.c_str(),
+                                 wsu_ns.c_str());
+            }
+            xmlSetNsProp(tokenNode, wsuNs, BAD_CAST "Id", str_id.c_str());
+            xmlAddChild(keyInfoNode, tokenNode);
+        
+            if(x509_id.length()) {
                 
+                x509_uri = BAD_CAST "#";
+                x509_uri += x509_id;
+                
+                xmlNodePtr refNode = xmlNewNode(NULL, BAD_CAST "Reference");
+                xmlSetNs(refNode, wsseNs);
+                xmlAddChild(tokenNode, refNode);
+                
+                xmlSetProp(refNode, BAD_CAST "URI", BAD_CAST x509_uri.c_str());
+                xmlSetProp(refNode, BAD_CAST "ValueType", BAD_CAST x509_value_type.c_str());
+                
+            }
+        }
+    }
+
+    
+    if(hasCertificates) {
+        xmlNodePtr refNode = xmlSecTmplSignatureAddReference(signNode,
+                                                             digestMethod,
+                                                             NULL,
+                                                             keyinfo_uri.length() ? keyinfo_uri.c_str() : NULL,
+                                                             NULL);
+        if (with_issuerSerial || with_ski || with_subjectName || with_certificate || with_crl) {
+            x509DataNode = xmlSecTmplKeyInfoAddX509Data(keyInfoNode);
+            if(x509DataNode) {
                 if(with_issuerSerial){
                     xmlNodePtr issuerSerialNode = xmlSecTmplX509DataAddIssuerSerial(x509DataNode);
                 }
-                
                 if(with_ski){
                     xmlNodePtr skiNode = xmlSecTmplX509DataAddSKI(x509DataNode);
                 }
-                
                 if(with_subjectName){
                     xmlNodePtr subjectName = xmlSecTmplX509DataAddSubjectName(x509DataNode);
                 }
-                
                 if(with_certificate){
                     xmlNodePtr certificateNode = xmlSecTmplX509DataAddCertificate(x509DataNode);
                 }
-                
                 if(with_crl){
                     xmlNodePtr crlNode = xmlSecTmplX509DataAddCRL(x509DataNode);
                 }
             }
         }
-        
         keyValueNode = xmlSecTmplKeyInfoAddKeyValue(keyInfoNode);
-  
     }
-     
+    
     return keyValueNode;
 }
 
@@ -1925,29 +2030,6 @@ static void putXades(PA_ObjectRef options,
                         }
                     }
                 }
-            }else{
-                xmlString hash, issuerName, serialNumber;
-                if(getIssuer(options, Param2, Param3, digestMethod, hash, issuerName, serialNumber, keyValueNode, dsNs)){
-
-                    xmlNodePtr keyInfoNode = xmlSecFindNode(signNode, xmlSecNodeKeyInfo, xmlSecDSigNs);
-                    if(keyInfoNode) {
-                        xmlNodePtr issuerSerialNode = xmlSecFindNode(keyInfoNode, xmlSecNodeX509IssuerSerial, xmlSecDSigNs);
-                        if(issuerSerialNode) {
-                            xmlNodePtr issuerNameNode = xmlSecFindNode(issuerSerialNode, xmlSecNodeX509IssuerName, xmlSecDSigNs);
-                            if(issuerNameNode) {
-                                xmlNodeSetContent(issuerNameNode, issuerName.c_str());
-                            }else{
-                                xmlSecTmplX509IssuerSerialAddIssuerName(issuerSerialNode, issuerName.c_str());
-                            }
-                            xmlNodePtr serialNumberNode = xmlSecFindNode(issuerSerialNode, xmlSecNodeX509SerialNumber, xmlSecDSigNs);
-                            if(serialNumberNode) {
-                                xmlNodeSetContent(serialNumberNode, serialNumber.c_str());
-                            }else{
-                                xmlSecTmplX509IssuerSerialAddSerialNumber(issuerSerialNode, serialNumber.c_str());
-                            }
-                        }
-                    }
-                }
             }
         }
     }
@@ -2199,51 +2281,51 @@ static void doIt(PA_PluginParameters params,
                                     
                                     if(refNode) {
                                         
-                                        encNode = createEncNode(options, doc, digestMethod);
+                                        //encNode = createEncNode(options, signNode, digestMethod);
                                         
                                         if(encNode) {
                                             
-                                            xmlNodePtr digestMethodNode = xmlSecFindNode(encNode, xmlSecNodeDigestMethod, xmlSecDSigNs);
-                                            if(digestMethodNode) {
-                                                //ds:KeyInfo
-                                                xmlNodePtr keyInfoNode = xmlSecAddChild(digestMethodNode, xmlSecNodeKeyInfo, xmlSecDSigNs);
-                                                if(keyInfoNode) {
-                                                    xmlNodePtr referenceNode = xmlSecAddChild(keyInfoNode, BAD_CAST "SecurityTokenReference", BAD_CAST "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
-                                                    if(referenceNode) {
-                                                        xmlString hash, issuerName, serialNumber;
-                                                        xmlNodePtr keyValueNode = loadCerts(options, signNode, digestMethod, secKey, keyFmt, crtFmt, Param3);
-                                                        if(getIssuerPEM(options, Param3, digestMethod, hash, issuerName, serialNumber)){
-                                                            xmlNodePtr x509DataNode = xmlSecTmplKeyInfoAddX509Data(referenceNode);
-                                                            if(x509DataNode) {
-                                                                xmlNodePtr issuerSerialNode = xmlSecTmplX509DataAddIssuerSerial(x509DataNode);
-                                                                if(issuerSerialNode) {
-                                                                    xmlNodePtr issuerNameNode = xmlSecAddChild(issuerSerialNode, xmlSecNodeX509IssuerName, xmlSecDSigNs);
-                                                                    xmlNodeSetContent(issuerNameNode, issuerName.c_str());
-                                                                    xmlNodePtr serialNumberNode = xmlSecAddChild(issuerSerialNode, xmlSecNodeX509SerialNumber, xmlSecDSigNs);
-                                                                    xmlNodeSetContent(serialNumberNode, serialNumber.c_str());
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        
-                                        
-//                                        if(keyInfoNode) {
-//                                            xmlNodePtr securityTokenReferenceNode = xmlSecAddChild(keyInfoNode, BAD_CAST "SecurityTokenReference", BAD_CAST "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
                                             
-                    //                        xmlNodePtr securityTokenReferenceNode =xmlNewNode(NULL, BAD_CAST "SecurityTokenReference");
-                    //                        if(securityTokenReferenceNode) {
-                    //                            xmlNsPtr wsseNs = xmlNewNs(securityTokenReferenceNode,
-                    //                                                       BAD_CAST "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd",
-                    //                                                       wsse_ns.c_str());
-                    //                            xmlSetNs(securityTokenReferenceNode, wsseNs);
-                    //                            xmlAddChild(digestMethodNode, securityTokenReferenceNode);
-                    //                        }
-                                        
-                                        
-                                        
+                                            
+//                                            xmlNodePtr digestMethodNode = xmlSecFindNode(encNode, xmlSecNodeDigestMethod, xmlSecDSigNs);
+                                            
+//                                            if(digestMethodNode) {
+                                                //ds:KeyInfo
+//                                                xmlString xmldsig_ns = BAD_CAST "ds";
+//                                                xmlNodePtr keyInfoNode = xmlNewNode(NULL, xmlSecNodeKeyInfo);
+//                                                if(keyInfoNode) {
+//                                                    xmlNsPtr dsigNs = xmlNewNs(keyInfoNode,
+//                                                                               xmlSecDSigNs,
+//                                                                               xmldsig_ns.c_str());
+//                                                    xmlSetNs(keyInfoNode, dsigNs);
+//                                                    xmlAddChild(encNode, keyInfoNode);
+//                                                    
+//                                                    xmlNodePtr referenceNode = xmlSecAddChild(keyInfoNode, BAD_CAST "SecurityTokenReference", BAD_CAST "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd");
+//                                                    if(referenceNode) {
+//                                                        xmlString hash, issuerName, serialNumber;
+//                                                        loadCerts(options, signNode, digestMethod, secKey, keyFmt, crtFmt, Param3);
+//                                                        if(getIssuerPEM(options, Param3, digestMethod, hash, issuerName, serialNumber)){
+//                                                            xmlNodePtr x509DataNode = xmlSecTmplKeyInfoAddX509Data(referenceNode);
+//                                                            if(x509DataNode) {
+//                                                                xmlNodePtr issuerSerialNode = xmlSecTmplX509DataAddIssuerSerial(x509DataNode);
+//                                                                if(issuerSerialNode) {
+//                                                                    xmlNodePtr issuerNameNode = xmlSecAddChild(issuerSerialNode, xmlSecNodeX509IssuerName, xmlSecDSigNs);
+//                                                                    xmlNodeSetContent(issuerNameNode, issuerName.c_str());
+//                                                                    xmlNodePtr serialNumberNode = xmlSecAddChild(issuerSerialNode, xmlSecNodeX509SerialNumber, xmlSecDSigNs);
+//                                                                    xmlNodeSetContent(serialNumberNode, serialNumber.c_str());
+//                                                                }
+//                                                            }
+//                                                        }
+//                                                    }
+                                                    
+//xmlNodePtr cipherDataNode    = xmlSecAddChild(encNode, xmlSecNodeCipherData, xmlSecEncNs);
+//xmlNodePtr cipherValueNode   = xmlSecAddChild(cipherDataNode, xmlSecNodeCipherValue, xmlSecEncNs);
+//xmlNodePtr referenceListNode = xmlSecAddChild(encNode, xmlSecNodeReferenceList, xmlSecEncNs);
+//xmlNodePtr dataReferenceNode = xmlSecAddChild(referenceListNode, xmlSecNodeDataReference, xmlSecEncNs);
+
+//                                                }
+//                                            }
+                                        }
                                     }else{
                                         ob_set_s(status, L"error", (const char *)"failed:xmlSecTmplSignatureAddReference");
                                     }
@@ -2262,6 +2344,8 @@ static void doIt(PA_PluginParameters params,
                             if(keysMngr) {
                                 
                                 if(xmlSecCryptoAppDefaultKeysMngrInit(keysMngr) == 0) {
+                                    
+                                    pDsigCtx->flags |= XMLSEC_KEYINFO_FLAGS_DONT_STOP_ON_KEY_FOUND;
                                     
                                     xmlNodePtr keyValueNode = NULL;
                                     

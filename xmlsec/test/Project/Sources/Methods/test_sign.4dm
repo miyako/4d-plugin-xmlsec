@@ -13,7 +13,7 @@ $params:={}
 
 $params.xml:=$doc.getText("UTF-8"; Document unchanged:K24:18)
 $params.key:="pem"
-$params.xpath:="/soap:Envelope/soap:Body"
+$params.xpath:="/soap:Envelope/soap:Header/*[@soap:mustUnderstand=1]/*"
 $params.add:="previousSibling"
 /*
 previousSibling: immediately before
@@ -37,24 +37,20 @@ $params.xmldsig.sign:="rsa-sha256"
 $params.xmldsig.c14n:="1.0.e"
 $params.xmldsig.prefixList:="soap"
 
-$params.xmlenc:={}
-$params.xmlenc.xpath:="/soap:Envelope/soap:Header/*[@soap:mustUnderstand=1]/*"  //can't use wsse ns because it is not defined in root
-$params.xmlenc.add:="previousSibling"
-$params.xmlenc.id:="EK-7c5be4a3-6562-435a-877e-05df0814e83c"
-$params.xmlenc.crypt:="rsa-oaep"
-$params.xmlenc.digest:="sha256"
-$params.xmlenc.type:="wsse"
+$params.wsse:={}
+$params.wsse.xpath:="/soap:Envelope/soap:Header/*[@soap:mustUnderstand=1]/*"  //can't use wsse ns because it is not defined in root
+$params.wsse.add:="previousSibling"
+$params.wsse.id:="EK-7c5be4a3-6562-435a-877e-05df0814e83c"
+$params.wsse.crypt:="rsa-oaep"
+$params.wsse.digest:="sha256"
+$params.wsse.binarySecurityToken:="X509-1928feea-faf6-444f-99c7-ad5d8633682f"
+$params.wsse.securityTokenReference:="STR-4b1d0f7c-553e-4efb-b8aa-08bada6b7919"
 
-$params.xmldsig.keyInfo:={}
-$params.xmldsig.keyInfo.id:="KI-3a4dd53f-e024-4a6d-84e4-676e3e8ba177"
-$params.xmldsig.keyInfo.keyName:="SecurityTokenReference"
+$params.xmldsig.keyInfo:={id: "KI-3a4dd53f-e024-4a6d-84e4-676e3e8ba177"}
 
-ARRAY BLOB:C1222($certBLOBs; 1)
-$certBLOBs{0}:=$certBLOB
-
-$status:=xmlsec sign($params; $keyBLOB; $certBLOBs)
+$status:=xmlsec sign($params; $keyBLOB)
 
 $result:=Folder:C1567(fk desktop folder:K87:19).file("signed.xml")
-$result.setText($status.xml)
+$result.setText($status.xml; "utf-8-no-bom"; Document with LF:K24:22)
 
 OPEN URL:C673($result.platformPath)
