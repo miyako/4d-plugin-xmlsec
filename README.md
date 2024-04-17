@@ -17,6 +17,11 @@ pDsigCtx->keyInfoReadCtx.flags  |= XMLSEC_KEYINFO_FLAGS_LAX_KEY_SEARCH;
 pDsigCtx->keyInfoWriteCtx.flags |= XMLSEC_KEYINFO_FLAGS_LAX_KEY_SEARCH;
 ```
 
+PKCS requires extra treak
+
+```
+PKCS12_parse:error=4:crypto library function failed:openssl error: error:0308010C:digital envelope routines::unsupported
+```
 
 [miyako.github.io](https://miyako.github.io/2021/05/31/4d-plugin-xmlsec.html)
 
