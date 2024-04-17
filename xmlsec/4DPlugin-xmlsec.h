@@ -78,6 +78,9 @@ typedef enum {
     
 }xmlsec_add_t;
 
+static void setAsn1Time(PA_ObjectRef status, const ASN1_TIME *tm,const wchar_t *key);
+static xmlSecTransformId getSignMethodId(PA_ObjectRef xmldsig, const wchar_t *key);
+
 /* Original source code taken from
  * https://svn.apache.org/repos/asf/apr/apr/trunk/encoding/apr_base64.c
  *
