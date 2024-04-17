@@ -1,9 +1,6 @@
 //%attributes = {}
-$doc:=Folder:C1567(fk desktop folder:K87:19).file("source.xml")
-
-$cert:=Folder:C1567(fk desktop folder:K87:19).file("cert.der")
 var $certBLOB : Blob
-$certBLOB:=$cert.getContent()
+$certBLOB:=File:C1566("/RESOURCES/wsse/cert.der").getContent()
 ARRAY BLOB:C1222($certBLOBs; 1)  //array must have at least 1 element
 $certBLOBs{0}:=$certBLOB  //the certificate goes in element #0
 
@@ -13,7 +10,7 @@ $keyBLOB:=$rsakey.getContent()
 
 $params:={}
 
-$params.xml:=$doc.getText("UTF-8"; Document unchanged:K24:18)
+$params.xml:=File:C1566("/RESOURCES/wsse/source.xml").getText("UTF-8"; Document unchanged:K24:18)
 $params.key:="pem"
 $params.cert:="der"
 $params.xpath:="/soap:Envelope/soap:Header/*[@soap:mustUnderstand=1]/*"
