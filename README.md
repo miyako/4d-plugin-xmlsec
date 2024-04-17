@@ -17,6 +17,13 @@ pDsigCtx->keyInfoReadCtx.flags  |= XMLSEC_KEYINFO_FLAGS_LAX_KEY_SEARCH;
 pDsigCtx->keyInfoWriteCtx.flags |= XMLSEC_KEYINFO_FLAGS_LAX_KEY_SEARCH;
 ```
 
+OpenSSL3 may not work with legacy PKCS#12 
+
+https://www.openssl.org/docs/man3.0/man1/openssl-pkcs12.html
+
+```
+PKCS12_parse:error=4:crypto library function failed:openssl error: error:0308010C:digital envelope routines::unsupported
+```
 
 [miyako.github.io](https://miyako.github.io/2021/05/31/4d-plugin-xmlsec.html)
 
