@@ -39,64 +39,16 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "8ED35581-42BF-4B75-ACFC-3000CE8C77B7"
+            uuid = "E74417DA-651B-4F14-A2FE-C04D5FF75E63"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "4DPlugin-xmlsec.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1972"
-            endingLineNumber = "1972"
-            landmarkName = "getIssuer(options, Param2, Param3, digestMethod, hash, issuerName, serialNumber, keyValueNode, dsNs)"
-            landmarkType = "9">
-            <Locations>
-               <Location
-                  uuid = "8ED35581-42BF-4B75-ACFC-3000CE8C77B7 - c19109f37b6d26f2"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "putXades(void*, _xmlDoc*, _xmlNode*, _xmlSecTransformKlass const*, C_BLOB&amp;, PA_Variable, _xmlNode*)"
-                  moduleName = "xmlsec"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/miyako/Documents/GitHub/4d-plugin-xmlsec/xmlsec/4DPlugin-xmlsec.cpp"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "1972"
-                  endingLineNumber = "1972"
-                  offsetFromSymbolStart = "1032">
-               </Location>
-               <Location
-                  uuid = "8ED35581-42BF-4B75-ACFC-3000CE8C77B7 - c19109f37b6d26f2"
-                  shouldBeEnabled = "Yes"
-                  ignoreCount = "0"
-                  continueAfterRunningActions = "No"
-                  symbolName = "putXades(void*, _xmlDoc*, _xmlNode*, _xmlSecTransformKlass const*, C_BLOB&amp;, PA_Variable, _xmlNode*)"
-                  moduleName = "xmlsec"
-                  usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/miyako/Documents/GitHub/4d-plugin-xmlsec/xmlsec/4DPlugin-xmlsec.cpp"
-                  startingColumnNumber = "9223372036854775807"
-                  endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "1972"
-                  endingLineNumber = "1972"
-                  offsetFromSymbolStart = "6616">
-               </Location>
-            </Locations>
-         </BreakpointContent>
-      </BreakpointProxy>
-      <BreakpointProxy
-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
-         <BreakpointContent
-            uuid = "8D48DEAF-CD68-41B5-92F4-935AD8CDD85D"
-            shouldBeEnabled = "Yes"
-            ignoreCount = "0"
-            continueAfterRunningActions = "No"
-            filePath = "4DPlugin-xmlsec.cpp"
-            startingColumnNumber = "9223372036854775807"
-            endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "1100"
-            endingLineNumber = "1100"
-            landmarkName = "getSignMethodId(xmldsig, key)"
+            startingLineNumber = "2269"
+            endingLineNumber = "2269"
+            landmarkName = "doIt(params, command)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
