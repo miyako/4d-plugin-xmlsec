@@ -48,7 +48,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "1972"
             endingLineNumber = "1972"
-            landmarkName = "putXades(options, doc, signNode, digestMethod, Param2, Param3, keyValueNode)"
+            landmarkName = "getIssuer(options, Param2, Param3, digestMethod, hash, issuerName, serialNumber, keyValueNode, dsNs)"
             landmarkType = "9">
             <Locations>
                <Location
@@ -96,7 +96,7 @@
             endingColumnNumber = "9223372036854775807"
             startingLineNumber = "1100"
             endingLineNumber = "1100"
-            landmarkName = "loadCerts(options, signNode, digestMethod, key, keyFmt, crtFmt, Param3)"
+            landmarkName = "getSignMethodId(xmldsig, key)"
             landmarkType = "9">
          </BreakpointContent>
       </BreakpointProxy>
