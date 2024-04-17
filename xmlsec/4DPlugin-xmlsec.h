@@ -77,8 +77,22 @@ typedef enum {
     
 }xmlsec_add_t;
 
+typedef struct {
+    
+    xmlDocPtr doc;
+    xmlNodePtr anchor;
+    xmlNodeSetPtr nodeset;
+    int length;
+    
+} c14nctx_t;
+
 static void setAsn1Time(PA_ObjectRef status, const ASN1_TIME *tm,const wchar_t *key);
 static xmlSecTransformId getSignMethodId(PA_ObjectRef xmldsig, const wchar_t *key);
+static void getIssuer(X509 *cert, xmlString& issuerName, xmlString& serialNumber);
+static xmlSecKeyDataFormat getFmt(PA_ObjectRef options, const wchar_t *key);
+static void getHash(void *p, PA_long32 size, xmlString& value, xmlSecTransformId digestMethod);
+static bool getHash(X509* cert, xmlString& value, xmlSecTransformId digestMethod);
+static void getHash(xmlString& value, xmlSecTransformId digestMethod);
 
 /* Original source code taken from
  * https://svn.apache.org/repos/asf/apr/apr/trunk/encoding/apr_base64.c
