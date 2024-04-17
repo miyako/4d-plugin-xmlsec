@@ -37,6 +37,7 @@
 #include "libxml/xpath.h"
 #include "libxml/xpathInternals.h"
 #include "xmlsec/xmlsec.h"
+#include "xmlsec/xmlenc.h"
 #include "xmlsec/xmltree.h"
 #include "xmlsec/xmldsig.h"
 #include "xmlsec/crypto.h"

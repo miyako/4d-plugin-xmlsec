@@ -1,5 +1,4 @@
 {
-	"(export_project)": {},
 	"xmldsig_sign": {
 		"methods": [
 			"xmldsig_sign_1",
@@ -11,9 +10,5 @@
 			"xmldsig_sign_7"
 		]
 	},
-	"trash": {
-		"groups": [
-			"(export_project)"
-		]
-	}
+	"trash": {}
 }
