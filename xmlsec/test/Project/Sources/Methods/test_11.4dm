@@ -6,7 +6,7 @@ $rsakey:=Folder:C1567(fk resources folder:K87:11).file("rsakey.pem")
 $x_pem:=$rsakey.getContent()
 
 $status:=xmlsec sign({\
-xml: Folder:C1567(fk desktop folder:K87:19).file("RefappsMessages_CheckInteroperability_2024-03-12_08_51_16.647.xml").getText("UTF-8"; Document unchanged:K24:18); \
+xml: Folder:C1567(fk desktop folder:K87:19).file("dummy.xml").getText("UTF-8"; Document unchanged:K24:18); \
 key: "pem"; \
 xmldsig: {\
 digest: "sha256"; \

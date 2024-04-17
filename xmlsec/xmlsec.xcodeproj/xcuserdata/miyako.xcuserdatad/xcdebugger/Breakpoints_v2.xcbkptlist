@@ -46,10 +46,42 @@
             filePath = "4DPlugin-xmlsec.cpp"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "2269"
-            endingLineNumber = "2269"
-            landmarkName = "doIt(params, command)"
+            startingLineNumber = "2272"
+            endingLineNumber = "2272"
+            landmarkName = "xmlsec_x509(params)"
             landmarkType = "9">
+            <Locations>
+               <Location
+                  uuid = "E74417DA-651B-4F14-A2FE-C04D5FF75E63 - 4440a8c509df9137"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "xmlsec_x509(PluginBlock*)"
+                  moduleName = "xmlsec"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/miyako/Documents/GitHub/4d-plugin-xmlsec/xmlsec/4DPlugin-xmlsec.cpp"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "2269"
+                  endingLineNumber = "2269"
+                  offsetFromSymbolStart = "572">
+               </Location>
+               <Location
+                  uuid = "E74417DA-651B-4F14-A2FE-C04D5FF75E63 - 4440a8c509df9ed0"
+                  shouldBeEnabled = "Yes"
+                  ignoreCount = "0"
+                  continueAfterRunningActions = "No"
+                  symbolName = "xmlsec_x509(PluginBlock*)"
+                  moduleName = "xmlsec"
+                  usesParentBreakpointCondition = "Yes"
+                  urlString = "file:///Users/miyako/Documents/GitHub/4d-plugin-xmlsec/xmlsec/4DPlugin-xmlsec.cpp"
+                  startingColumnNumber = "9223372036854775807"
+                  endingColumnNumber = "9223372036854775807"
+                  startingLineNumber = "2272"
+                  endingLineNumber = "2272"
+                  offsetFromSymbolStart = "572">
+               </Location>
+            </Locations>
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>
