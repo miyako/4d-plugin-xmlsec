@@ -4,12 +4,11 @@
  * This is free software; see Copyright file in the source
  * distribution for preciese wording.
  *
- * Copyright (C) 2002-2022 Aleksey Sanin <aleksey@aleksey.com>. All Rights Reserved.
+ * Copyright (C) 2002-2016 Aleksey Sanin <aleksey@aleksey.com>. All Rights Reserved.
  */
 #ifndef __XMLSEC_GCRYPT_APP_H__
 #define __XMLSEC_GCRYPT_APP_H__
 
-#include <xmlsec/exports.h>
 #include <xmlsec/xmlsec.h>
 #include <xmlsec/keys.h>
 #include <xmlsec/keysmngr.h>
@@ -35,9 +34,6 @@ XMLSEC_CRYPTO_EXPORT int        xmlSecGCryptAppShutdown                 (void);
 XMLSEC_CRYPTO_EXPORT int        xmlSecGCryptAppDefaultKeysMngrInit      (xmlSecKeysMngrPtr mngr);
 XMLSEC_CRYPTO_EXPORT int        xmlSecGCryptAppDefaultKeysMngrAdoptKey  (xmlSecKeysMngrPtr mngr,
                                                                          xmlSecKeyPtr key);
-XMLSEC_CRYPTO_EXPORT int        xmlSecGCryptAppDefaultKeysMngrVerifyKey(xmlSecKeysMngrPtr mngr,
-                                                                         xmlSecKeyPtr key,
-                                                                         xmlSecKeyInfoCtxPtr keyInfoCtx);
 XMLSEC_CRYPTO_EXPORT int        xmlSecGCryptAppDefaultKeysMngrLoad      (xmlSecKeysMngrPtr mngr,
                                                                          const char* uri);
 XMLSEC_CRYPTO_EXPORT int        xmlSecGCryptAppDefaultKeysMngrSave      (xmlSecKeysMngrPtr mngr,
@@ -48,9 +44,6 @@ XMLSEC_CRYPTO_EXPORT int        xmlSecGCryptAppKeysMngrCertLoad         (xmlSecK
                                                                          const char *filename,
                                                                          xmlSecKeyDataFormat format,
                                                                          xmlSecKeyDataType type);
-XMLSEC_CRYPTO_EXPORT int        xmlSecGCryptAppKeysMngrCrlLoad          (xmlSecKeysMngrPtr mngr,
-                                                                         const char *filename,
-                                                                         xmlSecKeyDataFormat format);
 XMLSEC_CRYPTO_EXPORT int        xmlSecGCryptAppKeysMngrCertLoadMemory   (xmlSecKeysMngrPtr mngr,
                                                                          const xmlSecByte* data,
                                                                          xmlSecSize dataSize,
@@ -64,8 +57,7 @@ XMLSEC_CRYPTO_EXPORT int        xmlSecGCryptAppKeysMngrCertLoadMemory   (xmlSecK
  * Keys
  *
  ********************************************************************/
-XMLSEC_CRYPTO_EXPORT xmlSecKeyPtr xmlSecGCryptAppKeyLoadEx              (const char *filename,
-                                                                         xmlSecKeyDataType type,
+XMLSEC_CRYPTO_EXPORT xmlSecKeyPtr xmlSecGCryptAppKeyLoad                (const char *filename,
                                                                          xmlSecKeyDataFormat format,
                                                                          const char *pwd,
                                                                          void *pwdCallback,
@@ -101,3 +93,4 @@ XMLSEC_CRYPTO_EXPORT void*      xmlSecGCryptAppGetDefaultPwdCallback    (void);
 #endif /* __cplusplus */
 
 #endif /* __XMLSEC_GCRYPT_APP_H__ */
+
