@@ -1,0 +1,21 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build macos
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build
+        run: |
+          cd xmlsec
+          xcodebuild -project xmlsec.xcodeproj | xcpretty && exit ${PIPESTATUS[0]}
