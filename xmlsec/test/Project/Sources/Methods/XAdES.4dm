@@ -1,5 +1,5 @@
 //%attributes = {"invisible":true}
-C_OBJECT:C1216($0;$XAdES)
+C_OBJECT:C1216($0; $XAdES)
 
 $XAdES:=New object:C1471
 
@@ -25,14 +25,14 @@ in addition, the document as a whole is sign as per XMLDSIG, namespace ds
 
 $uuid:=Generate UUID:C1066
 
-ARRAY LONGINT:C221($pos;0)
-ARRAY LONGINT:C221($len;0)
+ARRAY LONGINT:C221($pos; 0)
+ARRAY LONGINT:C221($len; 0)
 
-If (Match regex:C1019("([:hex_digit:]{8})([:hex_digit:]{4})([:hex_digit:]{4})([:hex_digit:]{16})";$uuid;1;$pos;$len))
-	$uuid:=Lowercase:C14(New collection:C1472(Substring:C12($uuid;$pos{1};$len{1});Substring:C12($uuid;$pos{2};$len{2});Substring:C12($uuid;$pos{3};$len{3});Substring:C12($uuid;$pos{4};$len{4})).join("-");*)
+If (Match regex:C1019("([:hex_digit:]{8})([:hex_digit:]{4})([:hex_digit:]{4})([:hex_digit:]{16})"; $uuid; 1; $pos; $len))
+	$uuid:=Lowercase:C14(New collection:C1472(Substring:C12($uuid; $pos{1}; $len{1}); Substring:C12($uuid; $pos{2}; $len{2}); Substring:C12($uuid; $pos{3}; $len{3}); Substring:C12($uuid; $pos{4}; $len{4})).join("-"); *)
 End if 
 
-  //default Id for qualifyingProperties, signedProperties, unsignedProperties
+//default Id for qualifyingProperties, signedProperties, unsignedProperties
 
 $qualifyingProperties_id:="qualifyingProperties-"+$uuid
 $signedProperties_id:="signedProperties-"+$uuid
@@ -55,7 +55,8 @@ $signingCertificate.cert:=$cert
 
 $sigPolicyQualifiers:=New collection:C1472
 $sigPolicyQualifiers[0]:=New object:C1471
-$sigPolicyQualifiers[0].sigPolicyQualifier:=""
+$sigPolicyQualifiers[0].sigPolicyQualifier:=New object:C1471
+$sigPolicyQualifiers[0].sigPolicyQualifier.SPURI:="https://sede.administracion.gob.es/politica_de_firma_anexo_1.pdf"
 
 $documentationReferences:=New collection:C1472
 $documentationReferences[0]:=New object:C1471
@@ -78,7 +79,7 @@ End if
 $signaturePolicyIdentifer:=New object:C1471
 $signaturePolicyIdentifer.signaturePolicyId:=$signaturePolicyId
 
-  //SignatureProductionPlaceType
+//SignatureProductionPlaceType
 $signatureProductionPlace:=New object:C1471
 $signatureProductionPlace.city:=""
 $signatureProductionPlace.stateOrProvince:=""
@@ -96,7 +97,7 @@ If (False:C215)
 	$signerRole.certifiedRoles[0].certifiedRole:=""
 End if 
 
-  //SignedSignaturePropertiesType
+//SignedSignaturePropertiesType
 $signedSignatureProperties:=New object:C1471
 $signedSignatureProperties.signingTime:=""  //xsd:dateTime
 $signedSignatureProperties.signingCertificate:=$signingCertificate
@@ -153,7 +154,7 @@ $objectIdentifier.documentationReferences:=$documentationReferences  //optional
 
 If (False:C215)
 	
-	  //not implemented; for XAdES-T
+	//not implemented; for XAdES-T
 	
 	$allDataObjectsTimeStamp:=New collection:C1472
 	$allDataObjectsTimeStamp[0]:=New object:C1471
@@ -179,7 +180,7 @@ If (False:C215)
 	
 	$unsignedSignatureProperties:=New object:C1471
 	
-	  //not implemented
+	//not implemented
 	
 	$signatureTimeStamp:=New collection:C1472
 	$signatureTimeStamp[0]:=New object:C1471
@@ -212,7 +213,7 @@ If (False:C215)
 	$archiveTimeStamp:=New collection:C1472
 	$archiveTimeStamp[0]:=New object:C1471
 	
-	  //xsd:sequence
+	//xsd:sequence
 	$unsignedSignatureProperties.signatureTimeStamp:=$signatureTimeStamp
 	$unsignedSignatureProperties.counterSignature:=$counterSignature
 	$unsignedSignatureProperties.completeCertificateRefs:=$completeCertificateRefs
@@ -238,7 +239,7 @@ optinally, parent to SignedDataObjectProperties
 
 */
 
-  //SignedPropertiesType
+//SignedPropertiesType
 $signedProperties:=New object:C1471
 
 /*

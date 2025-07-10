@@ -68,6 +68,7 @@ $params.xades.qualifyingProperties.signedProperties.signedSignatureProperties.si
 $params.xades.qualifyingProperties.signedProperties.signedSignatureProperties.signingTime:=$signingTime
 $params.xades.qualifyingProperties.signedProperties.signedSignatureProperties.signaturePolicyIdentifer.signaturePolicyId[0].sigPolicyId.identifier:="http://www.facturae.es/politica_de_firma_formato_facturae/politica_de_firma_formato_facturae_v3_1.pdf"
 $params.xades.qualifyingProperties.signedProperties.signedSignatureProperties.signaturePolicyIdentifer.signaturePolicyId[0].sigPolicyId.digest:=$policyDigest
+$params.xades.qualifyingProperties.signedProperties.signedSignatureProperties.signaturePolicyIdentifer.signaturePolicyId[0].SigPolicyQualifiers:=[{SPURL: "https://sede.administracion.gob.es/politica_de_firma_anexo_1.pdf"}]
 
 $status:=xmlsec sign($params; $keyBLOB; $certBLOBs)
 

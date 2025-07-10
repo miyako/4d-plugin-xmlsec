@@ -1501,6 +1501,31 @@ static void putXades(PA_ObjectRef options,
                                                                 xmlNodePtr identifierNode = xmlNewNode(xadesNs, BAD_CAST "Identifier");
                                                                 xmlAddChild(sigPolicyIdNode, identifierNode);
                                                                 
+                                                                PA_CollectionRef SigPolicyQualifiers = ob_get_c(o, L"SigPolicyQualifiers");
+                                                                if(SigPolicyQualifiers){
+                                                                    if(PA_GetCollectionLength(SigPolicyQualifiers)) {
+                                                                        xmlNodePtr SigPolicyQualifiersNode = xmlNewNode(xadesNs, BAD_CAST "SigPolicyQualifiers");
+                                                                        xmlAddChild(signaturePolicyIdNode, SigPolicyQualifiersNode);
+                                                                        for(PA_ulong32 ii = 0; ii < PA_GetCollectionLength(SigPolicyQualifiers); ++ii) {
+                                                                            PA_Variable vv = PA_GetCollectionElement(SigPolicyQualifiers, ii);
+                                                                            if(PA_GetVariableKind(vv) == eVK_Object) {
+                                                                                xmlNodePtr SigPolicyQualifierNode = xmlNewNode(xadesNs, BAD_CAST "SigPolicyQualifier");
+                                                                                xmlAddChild(SigPolicyQualifiersNode, SigPolicyQualifierNode);
+                                                                                PA_ObjectRef oo = PA_GetObjectVariable(vv);
+                                                                                if(oo) {
+                                                                                    if(ob_get_s(oo, L"SPURL", &textValue)) {
+                                                                                        if(textValue.length()) {
+                                                                                            xmlNodePtr SPURINode = xmlNewNode(xadesNs, BAD_CAST "SPURI");
+                                                                                            xmlAddChild(SigPolicyQualifierNode, SPURINode);
+                                                                                            xmlNodeSetContent(SPURINode, BAD_CAST textValue.c_str());
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+
                                                                 if(ob_get_s(sigPolicyId, L"digest", &textValue)) {
                                                                     if(textValue.length()) {
                                                                         xmlNodePtr sigPolicyHashNode = xmlNewNode(xadesNs, BAD_CAST "SigPolicyHash");
