@@ -54,9 +54,6 @@ $signingCertificate:=New object:C1471
 $signingCertificate.cert:=$cert
 
 $sigPolicyQualifiers:=New collection:C1472
-$sigPolicyQualifiers[0]:=New object:C1471
-$sigPolicyQualifiers[0].sigPolicyQualifier:=New object:C1471
-$sigPolicyQualifiers[0].sigPolicyQualifier.SPURI:="https://sede.administracion.gob.es/politica_de_firma_anexo_1.pdf"
 
 $documentationReferences:=New collection:C1472
 $documentationReferences[0]:=New object:C1471
