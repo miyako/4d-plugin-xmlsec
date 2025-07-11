@@ -8,3 +8,4 @@ xmlsec/.vs/*
 xmlsec/xmlsec.vcxproj.user
 xmlsec/test/Plugins/xmlsec.bundle/Contents/Windows64/xmlsec.lib
 xmlsec/test/Plugins/xmlsec.bundle/Contents/Windows64/xmlsec.exp
+xmlsec/test/Project/DerivedData/*
