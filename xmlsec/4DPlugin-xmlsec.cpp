@@ -1513,7 +1513,7 @@ static void putXades(PA_ObjectRef options,
                     xmlAddChild(SigPolicyQualifiersNode, SigPolicyQualifierNode);
                     PA_ObjectRef oo = PA_GetObjectVariable(vv);
                     if(oo) {
-                        if(ob_get_s(oo, L"SPURL", &textValue)) {
+                        if(ob_get_s(oo, L"SPURI", &textValue)) {
                             if(textValue.length()) {
                                 xmlNodePtr SPURINode = xmlNewNode(xadesNs, BAD_CAST "SPURI");
                                 xmlAddChild(SigPolicyQualifierNode, SPURINode);
