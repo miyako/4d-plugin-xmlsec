@@ -54,7 +54,7 @@ $signingCertificate:=New object:C1471
 $signingCertificate.cert:=$cert
 
 $sigPolicyQualifiers:=New collection:C1472
-$sigPolicyQualifiers.push({SPURL: "https://sede.administracion.gob.es/politica_de_firma_anexo_1.pdf"})
+$sigPolicyQualifiers.push({SPURI: "https://sede.administracion.gob.es/politica_de_firma_anexo_1.pdf"})
 
 $documentationReferences:=New collection:C1472
 $documentationReferences[0]:=New object:C1471
