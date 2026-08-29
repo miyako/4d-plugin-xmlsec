@@ -91,7 +91,7 @@ static xmlSecKeyPtr loadKey(PA_ObjectRef options, C_BLOB& Param2, xmlSecKeyDataF
     xmlString password;
     
     CUTF8String textValue;
-    if(ob_get_s(options, L"password", &textValue)) {
+    if(ob_get_a(options, L"password", &textValue)) {
         password = BAD_CAST textValue.c_str();
     }
     
@@ -107,7 +107,7 @@ static xmlDocPtr parseXml(PA_ObjectRef options, const wchar_t *key) {
     xmlDocPtr p = NULL;
     
     CUTF8String xml;
-    if(ob_get_s(options, key, &xml)) {
+    if(ob_get_a(options, key, &xml)) {
         p = xmlParseDoc(BAD_CAST xml.c_str());
     }
     
@@ -171,7 +171,7 @@ static xmlNodePtr findNode(PA_ObjectRef options, xmlDocPtr doc) {
         CUTF8String textValue;
         
         //find node with id=id
-        if(ob_get_s(options, L"id", &textValue)) {
+        if(ob_get_a(options, L"id", &textValue)) {
             xmlAttrPtr attr = xmlGetID(doc, BAD_CAST textValue.c_str());
             if(attr) {
                 node = attr->parent;
@@ -182,7 +182,7 @@ static xmlNodePtr findNode(PA_ObjectRef options, xmlDocPtr doc) {
         }
 
         //find node with name=node
-        if(ob_get_s(options, L"node", &textValue)) {
+        if(ob_get_a(options, L"node", &textValue)) {
             xmlChar *buf = xmlStrdup(BAD_CAST textValue.c_str());
             if(buf) {
                 xmlChar *name;
@@ -206,7 +206,7 @@ static xmlNodePtr findNode(PA_ObjectRef options, xmlDocPtr doc) {
             }
         }
         
-        if(ob_get_s(options, L"xpath", &textValue)) {
+        if(ob_get_a(options, L"xpath", &textValue)) {
             xmlNodePtr rootNode = xmlDocGetRootElement(doc);
             if(rootNode) {
                 xmlXPathContextPtr ctx = xmlXPathNewContext(doc);
@@ -241,9 +241,7 @@ static void verify_result(PA_ObjectRef status, xmlSecDSigCtxPtr pDsigCtx) {
     
     ob_set_b(status, L"success", true);
     
-    //bug? should be pDsigCtx->status;
-    
-    xmlSecDSigStatus stat = static_cast<xmlSecDSigStatus>(reinterpret_cast<size_t>(pDsigCtx->signMethod));
+    xmlSecDSigStatus stat = pDsigCtx->status;
 
     if(stat ==  xmlSecDSigStatusSucceeded) {
         ob_set_b(status, L"valid", true);
@@ -297,7 +295,7 @@ static xmlSecKeyDataFormat getFmt(PA_ObjectRef options, const wchar_t *key) {
         
         CUTF8String textValue;
         
-        if(ob_get_s(options, key, &textValue)) {
+        if(ob_get_a(options, key, &textValue)) {
             if(textValue == BAD_CAST "binary") {
                 fmt = xmlSecKeyDataFormatBinary;
             }else
@@ -336,7 +334,7 @@ static xmlSecTransformId getDigestMethod(PA_ObjectRef xmldsig, const wchar_t *ke
     
     if(xmldsig) {
         
-        if(ob_get_s(xmldsig, key, &textValue)) {
+        if(ob_get_a(xmldsig, key, &textValue)) {
 
             xmlString transformId = BAD_CAST textValue.c_str();
 
@@ -405,11 +403,11 @@ static void registerIds(PA_ObjectRef options, xmlDocPtr doc) {
                                 xmlString id_namespace;
                                 xmlString id_name;
                                 
-                                if(ob_get_s(_id, L"prefix", &textValue)) {
+                                if(ob_get_a(_id, L"prefix", &textValue)) {
                                     id_prefix = BAD_CAST textValue.c_str();
-                                    if(ob_get_s(_id, L"namespace", &textValue)) {
+                                    if(ob_get_a(_id, L"namespace", &textValue)) {
                                         id_namespace = BAD_CAST textValue.c_str();
-                                        if(ob_get_s(_id, L"name", &textValue)) {
+                                        if(ob_get_a(_id, L"name", &textValue)) {
                                             id_name = BAD_CAST textValue.c_str();
                                             xmlString id_xpath = (const xmlChar *)"//*/@";
                                             id_xpath += id_prefix;
@@ -418,32 +416,37 @@ static void registerIds(PA_ObjectRef options, xmlDocPtr doc) {
                                             
                                             xmlXPathContextPtr context = xmlXPathNewContext(doc);
                                             
-                                            xmlXPathRegisterNs(context,
-                                                               id_prefix.c_str(),
-                                                               id_namespace.c_str());
-                                            
-                                            xmlXPathObjectPtr result = xmlXPathEvalExpression(id_xpath.c_str(), context);
-                                            
-                                            if(result) {
-                                                for (int i = 0; i < result->nodesetval->nodeNr; ++i) {
-                                                    auto node = result->nodesetval->nodeTab[i];
-                                                    if(node->type == XML_ATTRIBUTE_NODE) {
-                                                        
-                                                        xmlAttrPtr attr = node->parent->properties;
-                                                        
-                                                        xmlChar* value = xmlNodeListGetString(node->doc, attr->children, 1);
-                                                        
-                                                        if (value != NULL) {
-                                                            xmlAddID(NULL,
-                                                                node->doc,
-                                                                value,
-                                                                attr);
+                                            if(context) {
+                                                
+                                                xmlXPathRegisterNs(context,
+                                                                   id_prefix.c_str(),
+                                                                   id_namespace.c_str());
+                                                
+                                                xmlXPathObjectPtr result = xmlXPathEvalExpression(id_xpath.c_str(), context);
+                                                
+                                                if(result) {
+                                                    for (int i = 0; i < result->nodesetval->nodeNr; ++i) {
+                                                        auto node = result->nodesetval->nodeTab[i];
+                                                        if(node->type == XML_ATTRIBUTE_NODE) {
+                                                            
+                                                            xmlAttrPtr attr = node->parent->properties;
+                                                            
+                                                            xmlChar* value = xmlNodeListGetString(node->doc, attr->children, 1);
+                                                            
+                                                            if (value != NULL) {
+                                                                xmlAddID(NULL,
+                                                                    node->doc,
+                                                                    value,
+                                                                    attr);
 
-                                                            xmlFree(value);
+                                                                xmlFree(value);
+                                                            }
                                                         }
                                                     }
+                                                    xmlXPathFreeObject(result);
                                                 }
-                                                xmlXPathFreeObject(result);
+                                                
+                                                xmlXPathFreeContext(context);
                                             }
                                         }
                                     }
@@ -489,19 +492,19 @@ static xmlNodePtr createRefNode(PA_ObjectRef options,
                                     xmlString reference_uri;
                                     xmlString xmldsig_prefixList;
                                     
-                                    if(ob_get_s(ref, L"id", &textValue)) {
+                                    if(ob_get_a(ref, L"id", &textValue)) {
                                         reference_id = BAD_CAST textValue.c_str();
                                     }
                                     
-                                    if(ob_get_s(ref, L"type", &textValue)) {
+                                    if(ob_get_a(ref, L"type", &textValue)) {
                                         reference_type = BAD_CAST textValue.c_str();
                                     }
                                     
-                                    if(ob_get_s(ref, L"uri", &textValue)) {
+                                    if(ob_get_a(ref, L"uri", &textValue)) {
                                         reference_uri = BAD_CAST textValue.c_str();
                                     }
                                     
-                                    if(ob_get_s(ref, L"prefixList", &textValue)) {
+                                    if(ob_get_a(ref, L"prefixList", &textValue)) {
                                         xmldsig_prefixList = BAD_CAST textValue.c_str();
                                     }
                                     
@@ -540,7 +543,7 @@ static xmlSecTransformId getSignMethodId(PA_ObjectRef xmldsig, const wchar_t *ke
     
     if(xmldsig) {
         
-        if(ob_get_s(xmldsig, key, &textValue)) {
+        if(ob_get_a(xmldsig, key, &textValue)) {
             
             xmlString transformId = BAD_CAST textValue.c_str();
 
@@ -625,7 +628,7 @@ static xmlSecTransformId getTransformId(PA_ObjectRef xmldsig, const wchar_t *key
     
     if(xmldsig) {
         
-        if(ob_get_s(xmldsig, key, &textValue)) {
+        if(ob_get_a(xmldsig, key, &textValue)) {
             
             xmlString transformId = BAD_CAST textValue.c_str();
             
@@ -680,18 +683,18 @@ static xmlNodePtr createSignNode(PA_ObjectRef options, xmlDocPtr doc) {
             
             if(xmldsig) {
                 
-                if(ob_get_s(xmldsig, L"ns", &textValue)) {
+                if(ob_get_a(xmldsig, L"ns", &textValue)) {
                     xmldsig_ns = BAD_CAST textValue.c_str();
                 }
 
-                if(ob_get_s(xmldsig, L"id", &textValue)) {
+                if(ob_get_a(xmldsig, L"id", &textValue)) {
                     xmldsig_id = BAD_CAST textValue.c_str();
                 }
                 
                 c14n = getTransformId(xmldsig, L"c14n");
                 sign = getSignMethodId(xmldsig, L"sign");
                 
-                if(ob_get_s(xmldsig, L"prefixList", &textValue)) {
+                if(ob_get_a(xmldsig, L"prefixList", &textValue)) {
                     xmldsig_prefixList = BAD_CAST textValue.c_str();
                 }
             }
@@ -782,10 +785,10 @@ static xmlNodePtr loadCerts(PA_ObjectRef options,
             PA_ObjectRef keyInfo = ob_get_o(xmldsig, L"keyInfo");
             if(keyInfo) {
                 
-                if(ob_get_s(keyInfo, L"id", &textValue)) {
+                if(ob_get_a(keyInfo, L"id", &textValue)) {
                     keyinfo_id = BAD_CAST textValue.c_str();
                 }
-                if(ob_get_s(keyInfo, L"keyName", &textValue)) {
+                if(ob_get_a(keyInfo, L"keyName", &textValue)) {
                     keyName = BAD_CAST textValue.c_str();
                 }
             }
@@ -912,7 +915,7 @@ static xmlNodePtr xadesCreateQualifyingPropertiesNode(PA_ObjectRef options,
             
             PA_ObjectRef qualifyingProperties = ob_get_o(xades, L"qualifyingProperties");
             if(qualifyingProperties) {
-                if(ob_get_s(qualifyingProperties, L"id", &textValue)) {
+                if(ob_get_a(qualifyingProperties, L"id", &textValue)) {
                     xmlString qualifyingProperties_id = BAD_CAST textValue.c_str();
                     if(qualifyingProperties_id.length()) {
                         xmlSetProp(qualifyingPropertiesNode, BAD_CAST "Id", qualifyingProperties_id.c_str());
@@ -924,7 +927,7 @@ static xmlNodePtr xadesCreateQualifyingPropertiesNode(PA_ObjectRef options,
         PA_ObjectRef xmldsig = ob_get_o(options, L"xmldsig");
         
         if(xmldsig) {
-            if(ob_get_s(xmldsig, L"id", &textValue)) {
+            if(ob_get_a(xmldsig, L"id", &textValue)) {
                 if(textValue.length()) {
                     xmlString qualifyingProperties_target = BAD_CAST "#";
                     qualifyingProperties_target += BAD_CAST textValue.c_str();
@@ -945,7 +948,7 @@ static void getHash(void *p, PA_long32 size, xmlString& value, xmlSecTransformId
     
     std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> ctx(EVP_MD_CTX_new(), EVP_MD_CTX_free);
     
-    const EVP_MD *(*md)();
+    const EVP_MD *(*md)() = NULL;
     
     if(digestMethod->name == xmlSecTransformSha1Id->name) {
         md = EVP_sha1;
@@ -967,7 +970,7 @@ static void getHash(void *p, PA_long32 size, xmlString& value, xmlSecTransformId
         md = EVP_sha512;
     }
     
-    if(EVP_DigestInit(ctx.get(), md()) != 0)
+    if(md != NULL && EVP_DigestInit(ctx.get(), md()) != 0)
     {
         if(EVP_DigestUpdate(ctx.get(), p, size) != 0)
         {
@@ -988,7 +991,7 @@ static void getHash(xmlString& value, xmlSecTransformId digestMethod) {
     
     std::unique_ptr<EVP_MD_CTX, decltype(&EVP_MD_CTX_free)> ctx(EVP_MD_CTX_new(), EVP_MD_CTX_free);
     
-    const EVP_MD *(*md)();
+    const EVP_MD *(*md)() = NULL;
     
     if(digestMethod->name == xmlSecTransformSha1Id->name) {
         md = EVP_sha1;
@@ -1010,7 +1013,7 @@ static void getHash(xmlString& value, xmlSecTransformId digestMethod) {
         md = EVP_sha512;
     }
     
-    if(EVP_DigestInit(ctx.get(), md()) != 0)
+    if(md != NULL && EVP_DigestInit(ctx.get(), md()) != 0)
     {
         if(EVP_DigestUpdate(ctx.get(), value.c_str(), value.length()) != 0)
         {
@@ -1154,7 +1157,7 @@ static bool getIssuerPEM(PA_ObjectRef options,
         
         CUTF8String textValue;
         
-        if(ob_get_s(options, L"password", &textValue)) {
+        if(ob_get_a(options, L"password", &textValue)) {
             password = BAD_CAST textValue.c_str();
         }
         
@@ -1208,7 +1211,7 @@ static void getBn(const BIGNUM *n, xmlString& value){
     
     if(n){
         size_t nsize = BN_num_bytes(n);
-        std::vector<unsigned char *>buf(nsize + 1);
+        std::vector<unsigned char>buf(nsize + 1);
         size_t len = BN_bn2bin(n, (unsigned char *)&buf[0]);
         if(0 < len){
             value = BAD_CAST base64_encode((const unsigned char *)&buf[0], len).c_str();
@@ -1228,7 +1231,7 @@ static bool getIssuerP12(PA_ObjectRef options,
         
         CUTF8String textValue;
         
-        if(ob_get_s(options, L"password", &textValue)) {
+        if(ob_get_a(options, L"password", &textValue)) {
             password = BAD_CAST textValue.c_str();
         }
         
@@ -1240,51 +1243,61 @@ static bool getIssuerP12(PA_ObjectRef options,
     {
         PKCS12 *p12 = d2i_PKCS12_bio(biop12, NULL);
         
-        EVP_PKEY *key = NULL;
-        X509 *cert = NULL;
-        STACK_OF(X509) *ca = NULL;
+        if(p12) {
         
-        if(PKCS12_parse(p12, (const char *)password.c_str(), &key, &cert, &ca)){
-            getIssuer(cert, issuerName, serialNumber);
+            EVP_PKEY *key = NULL;
+            X509 *cert = NULL;
+            STACK_OF(X509) *ca = NULL;
             
-            BIO *bio = BIO_new(BIO_s_mem());
-            
-            if(bio){
-                i2d_X509_bio(bio, cert);
-                char *p = NULL;
-                int size = BIO_get_mem_data(bio, &p);
-                getHash(p, size, hash, digestMethod);
-                success = true;
-                BIO_free(bio);
-            }
-            
-            if(keyValueNode){
-                if(key){
-                    const RSA *r = EVP_PKEY_get0_RSA(key);
-                    if(r){
-                        const BIGNUM *n = NULL, *e = NULL, *d = NULL;
-                        RSA_get0_key(r, &n, &e, &d);
-                        if(n){
-                            xmlString modulus, exponent;
-                            getBn(n, modulus);
-                            
-                            xmlNodePtr RSAKeyValueNode = xmlNewNode(dsNs, BAD_CAST "RSAKeyValue");
-                            xmlAddChild(keyValueNode, RSAKeyValueNode);
-                            xmlNodePtr modulusNode = xmlNewNode(dsNs, BAD_CAST "Modulus");
-                            xmlAddChild(RSAKeyValueNode, modulusNode);
-                            xmlNodeSetContent(modulusNode, modulus.c_str());
-                            
-                            getBn(e, exponent);
-                            xmlNodePtr exponentNode = xmlNewNode(dsNs, BAD_CAST "Exponent");
-                            xmlAddChild(RSAKeyValueNode, exponentNode);
-                            xmlNodeSetContent(exponentNode, exponent.c_str());
-                            
+            if(PKCS12_parse(p12, (const char *)password.c_str(), &key, &cert, &ca)){
+                getIssuer(cert, issuerName, serialNumber);
+                
+                BIO *bio = BIO_new(BIO_s_mem());
+                
+                if(bio){
+                    i2d_X509_bio(bio, cert);
+                    char *p = NULL;
+                    int size = BIO_get_mem_data(bio, &p);
+                    getHash(p, size, hash, digestMethod);
+                    success = true;
+                    BIO_free(bio);
+                }
+                
+                if(keyValueNode){
+                    if(key){
+                        const RSA *r = EVP_PKEY_get0_RSA(key);
+                        if(r){
+                            const BIGNUM *n = NULL, *e = NULL, *d = NULL;
+                            RSA_get0_key(r, &n, &e, &d);
+                            if(n){
+                                xmlString modulus, exponent;
+                                getBn(n, modulus);
+                                
+                                xmlNodePtr RSAKeyValueNode = xmlNewNode(dsNs, BAD_CAST "RSAKeyValue");
+                                xmlAddChild(keyValueNode, RSAKeyValueNode);
+                                xmlNodePtr modulusNode = xmlNewNode(dsNs, BAD_CAST "Modulus");
+                                xmlAddChild(RSAKeyValueNode, modulusNode);
+                                xmlNodeSetContent(modulusNode, modulus.c_str());
+                                
+                                getBn(e, exponent);
+                                xmlNodePtr exponentNode = xmlNewNode(dsNs, BAD_CAST "Exponent");
+                                xmlAddChild(RSAKeyValueNode, exponentNode);
+                                xmlNodeSetContent(exponentNode, exponent.c_str());
+                                
+                            }
                         }
                     }
                 }
+                
+                if(ca) sk_X509_pop_free(ca, X509_free);
+                if(cert) X509_free(cert);
+                if(key) EVP_PKEY_free(key);
             }
-            BIO_free(biop12);
+            
+            PKCS12_free(p12);
         }
+        
+        BIO_free(biop12);
     }
     
     return success;
@@ -1332,7 +1345,7 @@ static void putXades(PA_ObjectRef options,
             
             if(xmldsig) {
                                 
-                if(ob_get_s(xmldsig, L"ns", &textValue)) {
+                if(ob_get_a(xmldsig, L"ns", &textValue)) {
                     xmldsig_ns = BAD_CAST textValue.c_str();
                 }
                 
@@ -1340,7 +1353,7 @@ static void putXades(PA_ObjectRef options,
                 
                 if(ref) {
                     
-                    if(ob_get_s(ref, L"id", &textValue)) {
+                    if(ob_get_a(ref, L"id", &textValue)) {
                         reference_id = BAD_CAST textValue.c_str();
                     }
                                         
@@ -1354,7 +1367,7 @@ static void putXades(PA_ObjectRef options,
                 
                 policyDigestMethod = getDigestMethod(xades, L"digest");
                 
-                if(ob_get_s(xades, L"ns", &textValue)) {
+                if(ob_get_a(xades, L"ns", &textValue)) {
                     xades_ns = BAD_CAST textValue.c_str();
                 }
  
@@ -1389,7 +1402,7 @@ static void putXades(PA_ObjectRef options,
                             xmlAddChild(qualifyingPropertiesNode, signedPropertiesNode);
                             PA_ObjectRef signedProperties = ob_get_o(qualifyingProperties, L"signedProperties");
                             if(signedProperties) {
-                                if(ob_get_s(signedProperties, L"id", &textValue)) {
+                                if(ob_get_a(signedProperties, L"id", &textValue)) {
                                     signedProperties_id = BAD_CAST textValue.c_str();
                                 }
                             }
@@ -1419,7 +1432,7 @@ static void putXades(PA_ObjectRef options,
                                     
 #pragma mark SignedProperties > SignedSignatureProperties > SigningTime
                                     
-                                    if(ob_get_s(signedSignatureProperties, L"signingTime", &textValue)) {
+                                    if(ob_get_a(signedSignatureProperties, L"signingTime", &textValue)) {
                                         xmlString signingTime = BAD_CAST textValue.c_str();
                                         if(signingTime.length()) {
                                             xmlNodePtr signingTimeNode = xmlNewNode(xadesNs, BAD_CAST "SigningTime");
@@ -1488,7 +1501,7 @@ static void putXades(PA_ObjectRef options,
                                                 if(o) {
                                                     PA_ObjectRef sigPolicyId = ob_get_o(o, L"sigPolicyId");
                                                     if(sigPolicyId){
-                                                        if(ob_get_s(sigPolicyId, L"identifier", &textValue)) {
+                                                        if(ob_get_a(sigPolicyId, L"identifier", &textValue)) {
                                                             if(textValue.length()) {
     xmlString identifier = BAD_CAST textValue.c_str();
     xmlNodePtr signaturePolicyIdentifierNode = xmlNewNode(xadesNs, BAD_CAST "SignaturePolicyIdentifier");
@@ -1513,7 +1526,7 @@ static void putXades(PA_ObjectRef options,
                     xmlAddChild(SigPolicyQualifiersNode, SigPolicyQualifierNode);
                     PA_ObjectRef oo = PA_GetObjectVariable(vv);
                     if(oo) {
-                        if(ob_get_s(oo, L"SPURI", &textValue)) {
+                        if(ob_get_a(oo, L"SPURI", &textValue)) {
                             if(textValue.length()) {
                                 xmlNodePtr SPURINode = xmlNewNode(xadesNs, BAD_CAST "SPURI");
                                 xmlAddChild(SigPolicyQualifierNode, SPURINode);
@@ -1526,7 +1539,7 @@ static void putXades(PA_ObjectRef options,
                                                                     }
                                                                 }
 
-                                                                if(ob_get_s(sigPolicyId, L"digest", &textValue)) {
+                                                                if(ob_get_a(sigPolicyId, L"digest", &textValue)) {
                                                                     if(textValue.length()) {
                                                                         xmlNodePtr sigPolicyHashNode = xmlNewNode(xadesNs, BAD_CAST "SigPolicyHash");
                                                                         xmlAddChild(signaturePolicyIdNode, sigPolicyHashNode);
@@ -1540,7 +1553,7 @@ static void putXades(PA_ObjectRef options,
                                                                 }
                                                                 
                                                                 xmlNodeSetContent(identifierNode, identifier.c_str());
-                                                                if(ob_get_s(sigPolicyId, L"description", &textValue)) {
+                                                                if(ob_get_a(sigPolicyId, L"description", &textValue)) {
                                                                     if(textValue.length()) {
                                                                         xmlNodePtr descriptionNode = xmlNewNode(xadesNs, BAD_CAST "Description");
                                                                         xmlAddChild(sigPolicyIdNode, descriptionNode);
@@ -1608,7 +1621,7 @@ static void putXades(PA_ObjectRef options,
                                                         if(o) {
                                                             xmlNodePtr claimedRoleNode = xmlNewNode(xadesNs, BAD_CAST "ClaimedRole");
                                                             xmlAddChild(claimedRolesNode, claimedRoleNode);
-                                                            if(ob_get_s(o, L"claimedRole", &textValue)) {
+                                                            if(ob_get_a(o, L"claimedRole", &textValue)) {
                                                                 if(textValue.length()) {
                                                                     xmlString claimedRole = BAD_CAST textValue.c_str();
                                                                     xmlNodeSetContent(claimedRoleNode, claimedRole.c_str());
@@ -1631,7 +1644,7 @@ static void putXades(PA_ObjectRef options,
                                                         if(o) {
                                                             xmlNodePtr certifiedRoleNode = xmlNewNode(xadesNs, BAD_CAST "CertifiedRole");
                                                             xmlAddChild(certifiedRolesNode, certifiedRoleNode);
-                                                            if(ob_get_s(o, L"certifiedRole", &textValue)) {
+                                                            if(ob_get_a(o, L"certifiedRole", &textValue)) {
                                                                 if(textValue.length()) {
                                                                     xmlString certifiedRole = BAD_CAST textValue.c_str();
                                                                     xmlNodeSetContent(certifiedRoleNode, certifiedRole.c_str());
@@ -1665,7 +1678,7 @@ static void putXades(PA_ObjectRef options,
                                                 xmlNodePtr dataObjectFormatNode = xmlNewNode(xadesNs, BAD_CAST "DataObjectFormat");
                                                 xmlAddChild(signedDataObjectPropertiesNode, dataObjectFormatNode);
                                                 
-                                                if(ob_get_s(o, L"id", &textValue)) {
+                                                if(ob_get_a(o, L"id", &textValue)) {
                                                     if(textValue.length()) {
                                                         reference_id = BAD_CAST textValue.c_str();
                                                     }
@@ -1689,7 +1702,7 @@ static void putXades(PA_ObjectRef options,
                                                 
 #pragma mark SignedProperties > SignedDataObjectProperties > DataObjectFormat > Description
                                                 
-                                                if(ob_get_s(o, L"description", &textValue)) {
+                                                if(ob_get_a(o, L"description", &textValue)) {
                                                     xmlNodePtr descriptionNode = xmlNewNode(xadesNs, BAD_CAST "Description");
                                                     xmlAddChild(dataObjectFormatNode, descriptionNode);
                                                     if(textValue.length()) {
@@ -1708,17 +1721,17 @@ static void putXades(PA_ObjectRef options,
                                                     xmlAddChild(dataObjectFormatNode, objectIdentifierNode);
                                                     xmlAddChild(objectIdentifierNode, identifierNode);
                                                     xmlAddChild(objectIdentifierNode, descriptionNode);
-                                                    if(ob_get_s(objectIdentifier, L"identifier", &textValue)){
+                                                    if(ob_get_a(objectIdentifier, L"identifier", &textValue)){
                                                         xmlString identifier = BAD_CAST textValue.c_str();
                                                         xmlNodeSetContent(identifierNode, identifier.c_str());
                                                     }
-                                                    if(ob_get_s(objectIdentifier, L"identifier_qualifier", &textValue)){
+                                                    if(ob_get_a(objectIdentifier, L"identifier_qualifier", &textValue)){
                                                         if(textValue.length()) {
                                                             xmlString identifier_qualifier = BAD_CAST textValue.c_str();
                                                             xmlSetProp(identifierNode, BAD_CAST "Qualifier", identifier_qualifier.c_str());
                                                         }
                                                     }
-                                                    if(ob_get_s(objectIdentifier, L"description", &textValue)){
+                                                    if(ob_get_a(objectIdentifier, L"description", &textValue)){
                                                         if(textValue.length()) {
                                                             xmlString description = BAD_CAST textValue.c_str();
                                                             xmlNodeSetContent(descriptionNode, description.c_str());
@@ -1730,7 +1743,7 @@ static void putXades(PA_ObjectRef options,
                                                 
 #pragma mark SignedProperties > SignedDataObjectProperties > DataObjectFormat > MimeType
                                                 
-                                                if(ob_get_s(o, L"mimeType", &textValue)) {
+                                                if(ob_get_a(o, L"mimeType", &textValue)) {
                                                     xmlNodePtr mimeTypeNode = xmlNewNode(xadesNs, BAD_CAST "MimeType");
                                                     xmlAddChild(dataObjectFormatNode, mimeTypeNode);
                                                     if(textValue.length()) {
@@ -1741,7 +1754,7 @@ static void putXades(PA_ObjectRef options,
                                                 
 #pragma mark SignedProperties > SignedDataObjectProperties > DataObjectFormat > Encoding
                                                 
-                                                if(ob_get_s(o, L"encoding", &textValue)) {
+                                                if(ob_get_a(o, L"encoding", &textValue)) {
                                                     xmlNodePtr encodingNode = xmlNewNode(xadesNs, BAD_CAST "Encoding");
                                                     xmlAddChild(dataObjectFormatNode, encodingNode);
                                                     if(textValue.length()) {
@@ -1764,7 +1777,7 @@ static void putXades(PA_ObjectRef options,
                             xmlNodePtr unsignedPropertiesNode = xmlNewNode(xadesNs, BAD_CAST "UnsignedProperties");
                             if(unsignedPropertiesNode) {
                                 xmlAddChild(qualifyingPropertiesNode, unsignedPropertiesNode);
-                                if(ob_get_s(unsignedProperties, L"id", &textValue)) {
+                                if(ob_get_a(unsignedProperties, L"id", &textValue)) {
                                     unsignedProperties_id = BAD_CAST textValue.c_str();
                                 }
                                 if(unsignedProperties_id.length()) {
@@ -1797,9 +1810,10 @@ static void putXades(PA_ObjectRef options,
 
 #pragma mark UnsignedProperties > UnsignedDataObjectProperties[]
                                 
-                                PA_CollectionRef unsignedDataObjectProperties = ob_get_c(unsignedSignatureProperties, L"unsignedDataObjectProperties");
+                                PA_CollectionRef unsignedDataObjectProperties = ob_get_c(unsignedProperties, L"unsignedDataObjectProperties");
                                 if(unsignedDataObjectProperties) {
                                     xmlNodePtr unsignedDataObjectPropertiesNode = xmlNewNode(xadesNs, BAD_CAST "UnsignedDataObjectProperties");
+                                    xmlAddChild(unsignedPropertiesNode, unsignedDataObjectPropertiesNode);
                                     for(PA_ulong32 i = 0; i < PA_GetCollectionLength(unsignedDataObjectProperties); ++i) {
                                         PA_Variable v = PA_GetCollectionElement(unsignedDataObjectProperties, i);
                                         if(PA_GetVariableKind(v) == eVK_Object) {
@@ -1807,8 +1821,9 @@ static void putXades(PA_ObjectRef options,
                                             
 #pragma mark UnsignedProperties > UnsignedDataObjectProperties[].UnsignedDataObjectProperty
                                             if(o) {
-                                                if(ob_get_s(unsignedProperties, L"unsignedDataObjectProperty", &textValue)){
+                                                if(ob_get_a(o, L"unsignedDataObjectProperty", &textValue)){
                                                     xmlNodePtr unsignedDataObjectPropertyNode = xmlNewNode(xadesNs, BAD_CAST "UnsignedDataObjectProperty");
+                                                    xmlAddChild(unsignedDataObjectPropertiesNode, unsignedDataObjectPropertyNode);
                                                     xmlNodeSetContent(unsignedDataObjectPropertyNode, BAD_CAST textValue.c_str());
                                                 }
                                             }
@@ -2241,8 +2256,10 @@ static void setAsn1Time(PA_ObjectRef status, const ASN1_TIME *tm,const wchar_t *
             if (ASN1_TIME_print(bio, tm)) {
                 std::vector<char>buf(99);//e.g. Feb _3 00:55:52 2015 GMT
                 int write = BIO_read(bio, &buf[0], 98);
-                buf[write]='\0';
-                ob_set_s(status, key, &buf[0]);
+                if(write > 0) {
+                    buf[write]='\0';
+                    ob_set_s(status, key, &buf[0]);
+                }
             }
             BIO_free(bio);
         }
@@ -2268,7 +2285,7 @@ void xmlsec_x509(PA_PluginParameters params) {
         
         CUTF8String textValue;
         
-        if(ob_get_s(options, L"password", &textValue)) {
+        if(ob_get_a(options, L"password", &textValue)) {
             password = BAD_CAST textValue.c_str();
         }
         
@@ -2290,11 +2307,17 @@ void xmlsec_x509(PA_PluginParameters params) {
             {
                 PKCS12 *p12 = d2i_PKCS12_bio(bio, NULL);
                 
-                EVP_PKEY *key = NULL;
-                STACK_OF(X509) *ca = NULL;
-                
-                if(PKCS12_parse(p12, (const char *)password.c_str(), &key, &cert, &ca)){
+                if(p12) {
                     
+                    EVP_PKEY *key = NULL;
+                    STACK_OF(X509) *ca = NULL;
+                    
+                    PKCS12_parse(p12, (const char *)password.c_str(), &key, &cert, &ca);
+                    
+                    if(ca) sk_X509_pop_free(ca, X509_free);
+                    if(key) EVP_PKEY_free(key);
+                    
+                    PKCS12_free(p12);
                 }
             }
                 break;
@@ -2322,6 +2345,8 @@ void xmlsec_x509(PA_PluginParameters params) {
                 BIO_free(biocert);
             }
             */
+            
+            X509_free(cert);
         }
         
         BIO_free(bio);

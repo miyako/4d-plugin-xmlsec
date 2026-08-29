@@ -570,6 +570,30 @@ PA_CollectionRef ob_get_c(PA_ObjectRef obj, const wchar_t *_key) {
     return value;
 }
 
+PA_ObjectRef ob_get_o(PA_ObjectRef obj, const wchar_t *_key) {
+    
+    PA_ObjectRef value = NULL;
+    
+    if(obj)
+    {
+        CUTF16String ukey;
+        json_wconv(_key, &ukey);
+        PA_Unistring key = PA_CreateUnistring((PA_Unichar *)ukey.c_str());
+        
+        if(PA_HasObjectProperty(obj, &key))
+        {
+            PA_Variable v = PA_GetObjectProperty(obj, &key);
+            if(PA_GetVariableKind(v) == eVK_Object)
+            {
+                value = PA_GetObjectVariable(v);
+            }
+        }
+        
+        PA_DisposeUnistring(&key);
+    }
+    return value;
+}
+
 void ob_stringify(PA_ObjectRef obj, CUTF8String *value) {
     
     if(!obj || !value) return;
